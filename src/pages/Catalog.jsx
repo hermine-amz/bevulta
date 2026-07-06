@@ -142,7 +142,6 @@ export default function Catalog({
   return (
     <div style={{ padding: '120px 24px 80px', maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.5s ease' }}>
       <div className="section-header">
-        <span className="badge badge-agro" style={{ marginBottom: '16px' }}>{t('catalogBadge', lang)}</span>
         <h2>{t('catalogTitle', lang)}</h2>
         <p>{t('catalogDesc', lang)}</p>
       </div>
@@ -255,7 +254,7 @@ export default function Catalog({
               <div key={p.id} className="compare-col">
                 <img src={p.image} alt={p.name} style={{ width: '100%', height: '110px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', marginBottom: '12px' }} />
                 <h3>{p.name}</h3>
-                <span className="badge badge-agro" style={{ marginBottom: '12px' }}>
+                <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: '20px', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', fontWeight: '700', fontSize: '0.85rem', marginBottom: '12px' }}>
                   {p.priceFcfa.toLocaleString()} FCFA
                 </span>
               </div>

@@ -6,7 +6,6 @@ export default function About({ lang }) {
   return (
     <div style={{ padding: '120px 24px 80px', maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.5s ease' }}>
       <div className="section-header">
-        <span className="badge badge-agro" style={{ marginBottom: '16px' }}>{t('aboutBadge', lang)}</span>
         <h2>{t('aboutTitle', lang)}</h2>
         <p>{t('aboutDesc', lang)}</p>
       </div>

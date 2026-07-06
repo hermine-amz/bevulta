@@ -24,7 +24,6 @@ export default function Services({ lang }) {
   return (
     <div style={{ padding: '120px 24px 80px', maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.5s ease' }}>
       <div className="section-header">
-        <span className="badge badge-agro" style={{ marginBottom: '16px' }}>{t('servicesBadge', lang)}</span>
         <h2>{t('servicesTitle', lang)}</h2>
         <p>{t('servicesDesc', lang)}</p>
       </div>
@@ -46,9 +45,6 @@ export default function Services({ lang }) {
       <div className="glass-panel sav-spotlight-card">
 
         <div>
-          <span className="badge badge-agro" style={{ backgroundColor: 'var(--primary)', color: 'white', marginBottom: '16px' }}>
-            {t('savBadge', lang)}
-          </span>
           <h2 style={{ fontSize: '2rem', marginBottom: '20px', color: 'var(--secondary)' }}>{t('savTitle', lang)}</h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '1.05rem' }}>
             {t('savDesc', lang)}

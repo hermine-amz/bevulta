@@ -349,7 +349,6 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
       {/* 4 Pillars Section */}
       <section className="pillars-section" id="pillars-section">
         <div className="section-header" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 40px' }}>
-          <span className="badge badge-agro" style={{ marginBottom: '12px' }}>{isEn ? "Our Core Pillars" : "Notre Expertise Technique"}</span>
           <h2 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>
             {isEn ? "Mechanization & Professional Technical Services" : "Notre Savoir-faire Technique et Industriel"}
           </h2>
@@ -443,7 +442,6 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
       {/* Domaines d'Intervention Section */}
       <section className="domains-section">
         <div className="section-header" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 40px' }}>
-          <span className="badge badge-agro" style={{ marginBottom: '12px' }}>{isEn ? "Our Fields" : "Nos domaines d'intervention"}</span>
           <h2 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>
             {isEn ? "Our Spheres of Action" : "Nos Domaines d'Intervention"}
           </h2>
@@ -474,10 +472,7 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
 
       {/* Featured Products Section */}
       <section className="section" style={{ backgroundColor: 'rgba(22, 101, 52, 0.02)', borderRadius: 'var(--radius-lg)', padding: '60px 24px' }}>
-        <div className="section-header" style={{ borderLeft: '4px solid var(--primary)', paddingLeft: '24px', marginBottom: '40px' }}>
-          <span className="badge badge-agro" style={{ marginBottom: '16px' }}>
-            {isEn ? "TOP MACHINERY" : "ÉQUIPEMENTS VEDETTES"}
-          </span>
+        <div className="section-header" style={{ marginBottom: '40px' }}>
           <h2>{isEn ? "Featured Industrial Solutions" : "Nos Machines Industrielles Vedettes"}</h2>
           <p>
             {isEn 
@@ -560,10 +555,6 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
       <section className="map-section" style={{ padding: '60px 24px' }}>
         <div className="map-container">
           <div>
-            <span className="badge badge-agro" style={{ marginBottom: '16px' }}>
-              <Globe size={14} style={{ marginRight: '6px' }} />
-              {t('mapBadge', lang)}
-            </span>
             <h2 style={{ fontSize: '2.2rem', marginBottom: '20px', color: 'var(--secondary)' }}>{t('mapTitle', lang)}</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
               {t('mapDesc', lang)}
