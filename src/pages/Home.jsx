@@ -195,31 +195,27 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
     <div style={{ animation: 'fadeIn 0.5s ease' }}>
       
       {/* Hero Section */}
-      <section className="hero" style={{ padding: '80px 24px', display: 'flex', alignItems: 'center', background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)', minHeight: '650px' }}>
-        <div className="hero-content-wrapper" style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: '40px', maxWidth: '1200px', margin: '0 auto', alignItems: 'center' }}>
+      <section className="hero" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' }}>
+        <div className="hero-content-wrapper">
           
-          <div className="hero-panel" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div className="breadcrumbs" style={{ color: 'var(--primary)', fontWeight: '700', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {isEn ? "Home | Appropriate Technologies" : "Accueil | Technologies Appropriées"}
-            </div>
+          <div className="hero-panel">
+            <h1>BEVULTA</h1>
             
-            <h1 style={{ fontSize: '4.5rem', fontWeight: '950', color: 'var(--primary)', lineHeight: '1.1', fontFamily: 'var(--font-heading)', margin: '0' }}>
-              BEVULTA
-            </h1>
-            
-            <h2 style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--secondary)', lineHeight: '1.3', margin: '0' }}>
+            <h2>
               {isEn 
-                ? "Technological innovation at the service of Africa's development"
-                : "L'innovation technologique au service du développement de l'Afrique"}
+                ? "Designer and Manufacturer of Agricultural and Industrial Machinery in West Africa"
+                : "Concepteur et Fabricant de Machines Agricoles et Industrielles en Afrique de l'Ouest"}
             </h2>
+
+            <div className="hero-divider"></div>
             
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: '1.6', margin: '0' }}>
+            <p>
               {isEn
-                ? "Conception and manufacturing of agro-food machines, professional training, research and innovation for an autonomous and prosperous Africa."
-                : "Conception et fabrication de machines agroalimentaires, formation professionnelle, recherche et innovation pour une Afrique autonome et prospère."}
+                ? "From our factory in Cotonou, we manufacture high-quality food processing machines (cassava, shea butter, juices) and robust construction equipment tailored to African markets."
+                : "Depuis notre usine de Cotonou, nous concevons et fabriquons des machines de transformation agroalimentaire (manioc, karité, jus de fruits) et des équipements de BTP robustes adaptés aux exigences du continent."}
             </p>
             
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '10px' }}>
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
               <button 
                 className="btn btn-primary"
                 onClick={() => setCurrentPage('catalog')}
@@ -242,9 +238,9 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
             </div>
           </div>
 
-          <div className="hero-visual" style={{ position: 'relative', width: '100%', height: '420px' }}>
+          <div className="hero-visual" style={{ position: 'relative', width: '100%', height: '350px' }}>
             <div className="hero-visual-glow" style={{ position: 'absolute', top: '-10%', left: '-10%', width: '120%', height: '120%', background: 'radial-gradient(circle, rgba(22,101,52,0.06) 0%, transparent 70%)', zIndex: '1' }}></div>
-            <div className="hero-img-card" style={{ position: 'relative', zIndex: '2', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-lg)', border: '1px solid rgba(22, 101, 52, 0.15)', width: '100%', height: '420px' }}>
+            <div className="hero-img-card" style={{ position: 'relative', zIndex: '2', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-lg)', border: '1px solid rgba(22, 101, 52, 0.15)', width: '100%', height: '350px' }}>
               {carouselImages.map((img, idx) => (
                 <img 
                   key={idx}
@@ -353,14 +349,14 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
       {/* 4 Pillars Section */}
       <section className="pillars-section" id="pillars-section">
         <div className="section-header" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 40px' }}>
-          <span className="badge badge-agro" style={{ marginBottom: '12px' }}>{isEn ? "Our Pillars" : "Nos Piliers d'Intervention"}</span>
+          <span className="badge badge-agro" style={{ marginBottom: '12px' }}>{isEn ? "Our Core Pillars" : "Notre Expertise Technique"}</span>
           <h2 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>
-            {isEn ? "How We Make a Difference" : "Nos 4 Piliers d'Intervention pour l'Afrique"}
+            {isEn ? "Mechanization & Professional Technical Services" : "Notre Savoir-faire Technique et Industriel"}
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>
             {isEn 
-              ? "We work closely with producers to build appropriate technology and robust local expertise."
-              : "Nous accompagnons les producteurs locaux dans la mécanisation à travers 4 piliers technologiques et pédagogiques."}
+              ? "We support agricultural processors and industrial operators through four key technical and educational pillars."
+              : "Nous accompagnons les transformateurs agricoles et les acteurs industriels à travers 4 piliers technologiques et pédagogiques."}
           </p>
         </div>
 
@@ -372,8 +368,8 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
             <h3>{isEn ? "CONCEPTION & MANUFACTURING" : "CONCEPTION & FABRICATION"}</h3>
             <p>
               {isEn 
-                ? "Machines and equipment designed and customized to match local African resources and environment."
-                : "Machines et équipements robustes, conçus et fabriqués localement pour s'adapter parfaitement aux réalités africaines."}
+                ? "Local manufacturing of robust agricultural machinery and customized food processing equipment adapted to West African resources."
+                : "Conception et fabrication locale de machines agricoles et d'équipements industriels de haute précision adaptés aux réalités africaines."}
             </p>
           </div>
 
@@ -381,11 +377,11 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
             <div className="pillar-icon-box">
               <GraduationCap size={24} />
             </div>
-            <h3>{isEn ? "PROFESSIONAL TRAINING" : "FORMATION PROFESSIONNELLE"}</h3>
+            <h3>{isEn ? "TECHNICAL TRAINING" : "FORMATION PROFESSIONNELLE"}</h3>
             <p>
               {isEn 
-                ? "Practical capacity building in maintenance, operation, and agricultural entrepreneurship."
-                : "Renforcement pratique des capacités techniques et entrepreneuriales pour assurer l'autonomie des opérateurs."}
+                ? "Hands-on training in machine operation, industrial maintenance, and agricultural entrepreneurship to ensure local autonomy."
+                : "Formation technique pratique pour la maintenance de machines, la conduite d'équipements et l'entrepreneuriat agricole."}
             </p>
           </div>
 
@@ -393,11 +389,11 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
             <div className="pillar-icon-box">
               <Microscope size={24} />
             </div>
-            <h3>{isEn ? "RESEARCH & INNOVATION" : "RECHERCHE & INNOVATION"}</h3>
+            <h3>{isEn ? "RESEARCH & DEVELOPMENT" : "RECHERCHE & INNOVATION"}</h3>
             <p>
               {isEn 
-                ? "Continuous development of appropriate, sustainable, and energy-efficient technologies."
-                : "Développement continu de technologies appropriées, écologiques et adaptées aux conditions locales."}
+                ? "Continuous development of appropriate technologies, energy-efficient machines, and eco-friendly industrial systems."
+                : "Recherche et développement (R&D) de technologies appropriées, de machines peu énergivores et adaptées au climat local."}
             </p>
           </div>
 
@@ -405,11 +401,11 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
             <div className="pillar-icon-box">
               <Users size={24} />
             </div>
-            <h3>{isEn ? "TECHNICAL SUPPORT" : "ACCOMPAGNEMENT & SAV"}</h3>
+            <h3>{isEn ? "TECHNICAL SUPPORT & SAV" : "ACCOMPAGNEMENT & SAV"}</h3>
             <p>
               {isEn 
-                ? "Personalized support, direct installation assistance, and permanent spare parts supply."
-                : "Appui technique de proximité, suivi de projet personnalisé et service après-vente réactif dans toute la sous-région."}
+                ? "Reactive after-sales service, direct machine installation, technical assistance, and permanent spare parts supply in Africa."
+                : "Service après-vente (SAV) réactif, installation sur site, assistance technique de proximité et pièces de rechange disponibles."}
             </p>
           </div>
         </div>

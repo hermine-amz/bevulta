@@ -7,7 +7,7 @@ export default function Footer({ setCurrentPage, lang }) {
 
   return (
     <footer className="footer" style={{ backgroundColor: '#042f1a', color: '#ffffff', padding: '60px 24px 30px' }}>
-      <div className="footer-container" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 1fr 1fr', gap: '40px', maxWidth: '1200px', margin: '0 auto' }}>
+      <div className="footer-container footer-grid">
         
         {/* Brand Block */}
         <div className="footer-col" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
