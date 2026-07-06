@@ -338,14 +338,6 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
         </div>
       </div>
 
-      {/* Process Chevron Ribbon */}
-      <div className="process-ribbon">
-        <div className="process-step">{isEn ? "PROCESS CONSULTING" : "AUDIT & CONSEIL"}</div>
-        <div className="process-step alt">{isEn ? "ENGINEERING & DESIGN" : "CONCEPTION & PLANS"}</div>
-        <div className="process-step">{isEn ? "MANUFACTURING" : "FABRICATION"}</div>
-        <div className="process-step alt">{isEn ? "GLOBAL SUPPORT & SAV" : "INSTALLATION & SAV"}</div>
-      </div>
-
       {/* 4 Pillars Section */}
       <section className="pillars-section" id="pillars-section">
         <div className="section-header" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 40px' }}>
