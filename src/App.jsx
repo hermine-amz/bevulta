@@ -12,10 +12,12 @@ import Contact from './pages/Contact';
 import Order from './pages/Order';
 import AdminDashboard from './pages/AdminDashboard';
 import ClientDashboard from './pages/ClientDashboard';
+import Ebooks from './pages/Ebooks';
 
 // Initial Data
 import { initialProducts } from './data/initialProducts';
-import { Lock, User, LayoutDashboard, KeyRound, Globe, Sun, Moon } from 'lucide-react';
+import { initialEbooks } from './data/initialEbooks';
+import { Lock, User, LayoutDashboard, KeyRound, Globe, Sun, Moon, ShoppingCart } from 'lucide-react';
 import { t } from './data/translations';
 import { supabase } from './supabaseClient';
 
@@ -134,6 +136,10 @@ export default function App() {
 
   // Database states
   const [products, setProducts] = useState([]);
+  const [ebooks, setEbooks] = useState(() => {
+    const saved = localStorage.getItem('bevulta_ebooks');
+    return saved ? JSON.parse(saved) : initialEbooks;
+  });
   const [orders, setOrders] = useState([]);
   const [messages, setMessages] = useState([]);
   const [settings, setSettings] = useState({
@@ -258,6 +264,32 @@ export default function App() {
           setSettings(newSettings);
         }
 
+        // Fetch ebooks
+        const { data: ebData, error: ebErr } = await supabase.from('ebooks').select('*').order('id', { ascending: true });
+        if (!ebErr && ebData && ebData.length > 0) {
+          setEbooks(ebData.map(b => ({
+            id: b.id,
+            title: b.title,
+            subtitle: b.subtitle,
+            category: b.category,
+            isPack: b.is_pack === true,
+            includedBooks: b.included_books || [],
+            priceFcfa: b.price_fcfa,
+            priceEur: b.price_eur,
+            promoPriceFcfa: b.promo_price_fcfa || null,
+            promoPriceEur: b.promo_price_eur || null,
+            pages: b.pages,
+            fileFormat: b.file_format,
+            language: b.language,
+            author: b.author,
+            badge: b.badge,
+            coverImage: b.cover_image,
+            downloadUrl: b.download_url,
+            isVisible: b.is_visible !== false,
+            featured: b.featured === true
+          })));
+        }
+
       } catch (err) {
         console.warn("Global fetch error:", err.message);
       }
@@ -265,6 +297,10 @@ export default function App() {
     fetchData();
   }, []);
 
+  // Sync ebooks to localStorage
+  useEffect(() => {
+    localStorage.setItem('bevulta_ebooks', JSON.stringify(ebooks));
+  }, [ebooks]);
 
   // Sync theme & lang
   useEffect(() => {
@@ -472,6 +508,93 @@ export default function App() {
         }
       }
     );
+  };
+
+  // E-books CRUD
+  const addEbook = async (newEbook) => {
+    setEbooks((prev) => [newEbook, ...prev]);
+    try {
+      const dbEbook = {
+        id: newEbook.id,
+        title: newEbook.title,
+        subtitle: newEbook.subtitle,
+        category: newEbook.category,
+        is_pack: newEbook.isPack === true,
+        included_books: newEbook.includedBooks || [],
+        price_fcfa: newEbook.priceFcfa,
+        price_eur: newEbook.priceEur,
+        promo_price_fcfa: newEbook.promoPriceFcfa ? Number(newEbook.promoPriceFcfa) : null,
+        promo_price_eur: newEbook.promoPriceEur ? Number(newEbook.promoPriceEur) : null,
+        pages: newEbook.pages,
+        file_format: newEbook.fileFormat,
+        language: newEbook.language,
+        author: newEbook.author,
+        badge: newEbook.badge,
+        cover_image: newEbook.coverImage,
+        download_url: newEbook.downloadUrl,
+        is_visible: newEbook.isVisible !== false,
+        featured: Boolean(newEbook.featured)
+      };
+      await supabase.from('ebooks').insert([dbEbook]);
+    } catch (err) {
+      console.error("Failed to sync new ebook to Supabase:", err);
+    }
+  };
+
+  const updateEbook = async (updatedEbook) => {
+    setEbooks((prev) =>
+      prev.map((b) => (b.id === updatedEbook.id ? updatedEbook : b))
+    );
+    try {
+      const dbEbook = {
+        title: updatedEbook.title,
+        subtitle: updatedEbook.subtitle,
+        category: updatedEbook.category,
+        is_pack: updatedEbook.isPack === true,
+        included_books: updatedEbook.includedBooks || [],
+        price_fcfa: updatedEbook.priceFcfa,
+        price_eur: updatedEbook.priceEur,
+        promo_price_fcfa: updatedEbook.promoPriceFcfa ? Number(updatedEbook.promoPriceFcfa) : null,
+        promo_price_eur: updatedEbook.promoPriceEur ? Number(updatedEbook.promoPriceEur) : null,
+        pages: updatedEbook.pages,
+        file_format: updatedEbook.fileFormat,
+        language: updatedEbook.language,
+        author: updatedEbook.author,
+        badge: updatedEbook.badge,
+        cover_image: updatedEbook.coverImage,
+        download_url: updatedEbook.downloadUrl,
+        is_visible: updatedEbook.isVisible !== false,
+        featured: Boolean(updatedEbook.featured)
+      };
+      await supabase.from('ebooks').update(dbEbook).eq('id', updatedEbook.id);
+    } catch (err) {
+      console.error("Failed to sync updated ebook to Supabase:", err);
+    }
+  };
+
+  const deleteEbook = async (ids) => {
+    const idsArray = Array.isArray(ids) ? ids : [ids];
+    setEbooks((prev) => prev.filter((b) => !idsArray.includes(b.id)));
+    try {
+      await supabase.from('ebooks').delete().in('id', idsArray);
+    } catch (err) {
+      console.error("Failed to sync deleted ebook to Supabase:", err);
+    }
+  };
+
+  const bulkUpdateEbooks = async (ids, updates) => {
+    setEbooks((prev) =>
+      prev.map((b) => (ids.includes(b.id) ? { ...b, ...updates } : b))
+    );
+    try {
+      const dbUpdates = {};
+      if (updates.isVisible !== undefined) dbUpdates.is_visible = updates.isVisible;
+      if (Object.keys(dbUpdates).length > 0) {
+        await supabase.from('ebooks').update(dbUpdates).in('id', ids);
+      }
+    } catch (err) {
+      console.error("Failed to sync bulk updated ebooks to Supabase:", err);
+    }
   };
 
   const handleAddWithMotor = () => {
@@ -687,6 +810,11 @@ export default function App() {
           updateProduct={updateProduct}
           bulkUpdateProducts={bulkUpdateProducts}
           deleteProduct={deleteProduct}
+          ebooks={ebooks}
+          addEbook={addEbook}
+          updateEbook={updateEbook}
+          deleteEbook={deleteEbook}
+          bulkUpdateEbooks={bulkUpdateEbooks}
           orders={orders}
           addOrder={handleSubmitOrder}
           updateOrderStatus={updateOrderStatus}
@@ -877,6 +1005,9 @@ export default function App() {
             lang={lang} 
             products={products} 
             setSelectedProduct={setSelectedProduct} 
+            ebooks={ebooks}
+            addToCart={addToCart}
+            showAlert={showAlert}
           />
         )}
         {currentPage === 'catalog' && (
@@ -890,6 +1021,15 @@ export default function App() {
             setSelectedMotor={setSelectedMotor}
             showAlert={showAlert}
             showConfirm={showConfirm}
+          />
+        )}
+        {currentPage === 'ebooks' && (
+          <Ebooks 
+            ebooks={ebooks} 
+            addToCart={addToCart} 
+            cart={cart}
+            lang={lang} 
+            showAlert={showAlert} 
           />
         )}
         {currentPage === 'services' && <Services lang={lang} />}

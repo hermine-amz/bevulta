@@ -1,0 +1,26 @@
+name: Supabase Keep-Alive Ping
+
+on:
+  schedule:
+    # S'exécute automatiquement tous les 3 jours à 06h00 UTC
+    - cron: '0 6 */3 * *'
+  workflow_dispatch: # Permet également de lancer le ping manuellement depuis GitHub
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          echo "Envoi du ping keep-alive vers Supabase BEVULTA..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtjd3B5YXRycXl2bXZvb3Ntem1uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDU3ODQsImV4cCI6MjA5Nzk4MTc4NH0.jh5F5guKj7osSU_a3yfeFv8SwPHZMB2ZXsv-1IMDPas' }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtjd3B5YXRycXl2bXZvb3Ntem1uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDU3ODQsImV4cCI6MjA5Nzk4MTc4NH0.jh5F5guKj7osSU_a3yfeFv8SwPHZMB2ZXsv-1IMDPas' }}" \
+            "https://kcwpyatrqyvmvoosmzmn.supabase.co/rest/v1/products?select=id&limit=1")
+          
+          echo "Réponse HTTP reçue : $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 204 ]; then
+            echo "✅ Ping Supabase réussi ! Le projet reste actif."
+          else
+            echo "ℹ️ Code retour : $HTTP_STATUS (le serveur Supabase a enregistré l'activité)."
+          fi

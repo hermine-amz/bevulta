@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, Package, FileText, Mail, Settings, LogOut, Lock, 
-  User, Plus, Trash2, Edit, Check, Eye, Trash, RefreshCw, X, Sun, Moon, Globe, Home, Phone, MapPin, ChevronLeft, ChevronRight
+  User, Plus, Trash2, Edit, Check, Eye, Trash, RefreshCw, X, Sun, Moon, Globe, Home, Phone, MapPin, ChevronLeft, ChevronRight,
+  BookOpen, Layers, Percent, Download, Copy
 } from 'lucide-react';
 import { CATEGORIES, CATEGORY_KEYS } from '../data/categories';
 import { t } from '../data/translations';
 import ProductEditor from './ProductEditor';
 import OrderEditor from './OrderEditor';
+import EbookEditor from './EbookEditor';
 
 export default function AdminDashboard({ 
   products, addProduct, updateProduct, deleteProduct,
+  ebooks = [], addEbook, updateEbook, deleteEbook, bulkUpdateEbooks,
   orders, addOrder, updateOrderStatus, deleteOrder,
   messages, markMessageRead, deleteMessage, replyMessage, updateMessageStatus,
   logoutAdmin, settings, updateSettings,
@@ -32,6 +35,15 @@ export default function AdminDashboard({
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [productSelectionMode, setProductSelectionMode] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({});
+
+  // Ebooks states
+  const [editingEbook, setEditingEbook] = useState(null);
+  const [showEbookEditor, setShowEbookEditor] = useState(false);
+  const [ebookSearch, setEbookSearch] = useState("");
+  const [ebookFilter, setEbookFilter] = useState("all"); // all | packs | single | promo | visible | hidden
+  const [selectedEbookIds, setSelectedEbookIds] = useState([]);
+  const [ebookSelectionMode, setEbookSelectionMode] = useState(false);
+  const [ebookBulkAction, setEbookBulkAction] = useState("");
 
   useEffect(() => {
     if (previewProduct) {
@@ -157,6 +169,58 @@ export default function AdminDashboard({
     setShowProductEditor(true);
   };
 
+  // Ebooks Handlers
+  const handleEbookSave = (payload) => {
+    if (editingEbook) {
+      updateEbook({ ...payload, id: editingEbook.id });
+      showAlert(isEn ? "E-book / Pack updated successfully!" : "E-book ou pack mis à jour avec succès !");
+    } else {
+      addEbook({ ...payload, id: Date.now() });
+      showAlert(isEn ? "E-book / Pack created successfully!" : "Nouvel e-book ou pack créé avec succès !");
+    }
+    setEditingEbook(null);
+    setShowEbookEditor(false);
+  };
+
+  const startEditEbook = (bk) => {
+    setEditingEbook(bk);
+    setShowEbookEditor(true);
+  };
+
+  const duplicateEbook = (bk) => {
+    const duplicated = {
+      ...bk,
+      id: Date.now(),
+      title: `${bk.title} (Copie)`
+    };
+    addEbook(duplicated);
+    showAlert(isEn ? "Duplicated successfully!" : "E-book dupliqué avec succès !");
+  };
+
+  const toggleEbookVisibility = (bk) => {
+    const updated = { ...bk, isVisible: bk.isVisible === false ? true : false };
+    updateEbook(updated);
+    showAlert(
+      updated.isVisible 
+        ? (isEn ? "E-book is now visible on site." : "L'e-book est maintenant visible sur le site.") 
+        : (isEn ? "E-book is now hidden." : "L'e-book est maintenant masqué du site.")
+    );
+  };
+
+  const handleDeleteEbook = (ids) => {
+    const idsArray = Array.isArray(ids) ? ids : [ids];
+    showConfirm(
+      lang === 'fr' 
+        ? `Êtes-vous sûr de vouloir supprimer ${idsArray.length > 1 ? `ces ${idsArray.length} offres numériques` : 'cette offre numérique'} ?` 
+        : `Are you sure you want to delete ${idsArray.length > 1 ? `these ${idsArray.length} items` : 'this item'}?`,
+      () => {
+        deleteEbook(idsArray);
+        setSelectedEbookIds([]);
+        showAlert(isEn ? "Item(s) deleted." : "Offre(s) supprimée(s).");
+      }
+    );
+  };
+
   const handleSaveSettings = (e) => {
     e.preventDefault();
     updateSettings(settingsForm);
@@ -253,6 +317,18 @@ export default function AdminDashboard({
           >
             <Package size={18} />
             <span>{t('dashInventory', lang)}</span>
+          </button>
+          <button 
+            className={`admin-menu-item ${activeTab === 'ebooks' ? 'active' : ''}`}
+            onClick={() => setActiveTab('ebooks')}
+          >
+            <BookOpen size={18} />
+            <span>{t('dashEbooks', lang)}</span>
+            {ebooks.length > 0 && (
+              <span style={{ backgroundColor: 'var(--accent-orange)', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', marginLeft: 'auto' }}>
+                {ebooks.length}
+              </span>
+            )}
           </button>
           <button 
             className={`admin-menu-item ${activeTab === 'messages' ? 'active' : ''}`}
@@ -365,6 +441,19 @@ export default function AdminDashboard({
                   </div>
                   <div className="stat-icon" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}>
                     <Mail size={22} />
+                  </div>
+                </div>
+
+                <div className="stat-card" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('ebooks')}>
+                  <div className="stat-info">
+                    <h4>{isEn ? "E-books & Packs" : "E-books & Packs"}</h4>
+                    <div className="stat-number">{ebooks.length}</div>
+                    <span style={{ fontSize: '0.75rem', color: '#d97706' }}>
+                      {ebooks.filter(e => e.isPack).length} packs · {ebooks.filter(e => e.promoPriceFcfa).length} en promo
+                    </span>
+                  </div>
+                  <div className="stat-icon" style={{ backgroundColor: 'rgba(217, 119, 6, 0.12)', color: '#d97706' }}>
+                    <BookOpen size={22} />
                   </div>
                 </div>
               </div>
@@ -805,6 +894,361 @@ export default function AdminDashboard({
               </div>
             </div>
           )}
+
+          {/* TAB: E-BOOKS & PACKS */}
+          {activeTab === 'ebooks' && (() => {
+            const filteredEbooks = ebooks.filter(b => {
+              const q = ebookSearch.toLowerCase();
+              const matchSearch = !q || 
+                b.title?.toLowerCase().includes(q) || 
+                b.subtitle?.toLowerCase().includes(q) || 
+                b.category?.toLowerCase().includes(q) ||
+                b.includedBooks?.some(item => item.toLowerCase().includes(q));
+
+              if (!matchSearch) return false;
+              if (ebookFilter === 'packs') return b.isPack;
+              if (ebookFilter === 'single') return !b.isPack;
+              if (ebookFilter === 'promo') return Boolean(b.promoPriceFcfa);
+              if (ebookFilter === 'visible') return b.isVisible !== false;
+              if (ebookFilter === 'hidden') return b.isVisible === false;
+              return true;
+            });
+
+            const totalPacks = ebooks.filter(e => e.isPack).length;
+            const totalPromos = ebooks.filter(e => e.promoPriceFcfa).length;
+            const totalSingles = ebooks.filter(e => !e.isPack).length;
+
+            return (
+              <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+                
+                {/* Header & Search */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', gap: '12px', flexShrink: 0, flexWrap: 'wrap' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.25rem', color: 'var(--secondary)', margin: '0 0 4px' }}>
+                      {isEn ? "E-books & Complete Packs Management" : "Gestion des E-books & Packs Numériques"}
+                    </h3>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0 }}>
+                      {isEn ? "Create, sell single e-books or bundle multiple books in packs with promo pricing." : "Créez et vendez des e-books à l'unité ou en packs multi-livres avec gestion des prix normaux et promo."}
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative' }}>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        placeholder={isEn ? "Search e-books, packs..." : "Rechercher par titre, thème..."}
+                        value={ebookSearch}
+                        onChange={(e) => setEbookSearch(e.target.value)}
+                        style={{ width: '240px', paddingRight: '28px' }}
+                      />
+                      {ebookSearch && (
+                        <button 
+                          onClick={() => setEbookSearch('')} 
+                          style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+
+                    <button
+                      className="btn btn-outline"
+                      style={{ fontSize: '0.82rem', padding: '8px 14px' }}
+                      onClick={() => {
+                        setEbookSelectionMode(!ebookSelectionMode);
+                        setSelectedEbookIds([]);
+                      }}
+                    >
+                      {ebookSelectionMode ? (isEn ? "Exit Selection" : "Annuler sélection") : (isEn ? "Bulk Actions" : "Sélectionner")}
+                    </button>
+
+                    <button 
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setEditingEbook(null);
+                        setShowEbookEditor(true);
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      <Plus size={16} />
+                      <span>{isEn ? "Add E-book or Pack" : "Ajouter un E-book / Pack"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter pills & KPI row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '14px', flexShrink: 0, flexWrap: 'wrap' }}>
+                  
+                  {/* Filter tabs */}
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {[
+                      { id: 'all', label: isEn ? `All (${ebooks.length})` : `Tous (${ebooks.length})` },
+                      { id: 'packs', label: isEn ? `Packs (${totalPacks})` : `Packs Groupés (${totalPacks})` },
+                      { id: 'single', label: isEn ? `Single Books (${totalSingles})` : `E-books Seuls (${totalSingles})` },
+                      { id: 'promo', label: isEn ? `On Sale (${totalPromos})` : `En Promotion (${totalPromos})` },
+                      { id: 'visible', label: isEn ? 'Visible' : 'Visibles' },
+                      { id: 'hidden', label: isEn ? 'Hidden' : 'Masqués' }
+                    ].map(f => {
+                      const active = ebookFilter === f.id;
+                      return (
+                        <button
+                          key={f.id}
+                          onClick={() => setEbookFilter(f.id)}
+                          style={{
+                            padding: '5px 12px',
+                            fontSize: '0.78rem',
+                            borderRadius: '20px',
+                            border: `1px solid ${active ? 'var(--primary)' : 'var(--border-subtle)'}`,
+                            background: active ? 'var(--primary)' : 'var(--bg-surface)',
+                            color: active ? '#ffffff' : 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            fontWeight: active ? 700 : 500,
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          {f.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Bulk action buttons if selection mode */}
+                  {ebookSelectionMode && selectedEbookIds.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-surface)', padding: '4px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{selectedEbookIds.length} sélectionné(s) :</span>
+                      <button 
+                        className="btn btn-outline" 
+                        style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                        onClick={() => {
+                          selectedEbookIds.forEach(id => {
+                            const found = ebooks.find(e => e.id === id);
+                            if (found) updateEbook({ ...found, isVisible: true });
+                          });
+                          setSelectedEbookIds([]);
+                          showAlert("Marqués comme visibles.");
+                        }}
+                      >
+                        Rendre visible
+                      </button>
+                      <button 
+                        className="btn btn-outline" 
+                        style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                        onClick={() => {
+                          selectedEbookIds.forEach(id => {
+                            const found = ebooks.find(e => e.id === id);
+                            if (found) updateEbook({ ...found, isVisible: false });
+                          });
+                          setSelectedEbookIds([]);
+                          showAlert("Marqués comme masqués.");
+                        }}
+                      >
+                        Masquer
+                      </button>
+                      <button 
+                        className="btn btn-outline" 
+                        style={{ padding: '4px 8px', fontSize: '0.75rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
+                        onClick={() => handleDeleteEbook(selectedEbookIds)}
+                      >
+                        Supprimer ({selectedEbookIds.length})
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* E-books Data Table */}
+                <div className="data-table-container" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        {ebookSelectionMode && (
+                          <th style={{ width: '40px' }}>
+                            <input 
+                              type="checkbox"
+                              checked={selectedEbookIds.length === filteredEbooks.length && filteredEbooks.length > 0}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedEbookIds(filteredEbooks.map(b => b.id));
+                                } else {
+                                  setSelectedEbookIds([]);
+                                }
+                              }}
+                            />
+                          </th>
+                        )}
+                        <th style={{ width: '60px' }}>Couverture</th>
+                        <th>{isEn ? "Offer / Title" : "Offre & Titre"}</th>
+                        <th>Type</th>
+                        <th>Catégorie</th>
+                        <th>{isEn ? "Normal Price" : "Prix Normal"}</th>
+                        <th>{isEn ? "Promo Price" : "Prix Promo"}</th>
+                        <th>Volume</th>
+                        <th>Statut</th>
+                        <th style={{ textAlign: 'right' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredEbooks.length === 0 ? (
+                        <tr>
+                          <td colSpan={10} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                            <BookOpen size={36} style={{ opacity: 0.3, marginBottom: '8px' }} />
+                            <div>{isEn ? "No e-books or packs found." : "Aucun e-book ou pack correspondant."}</div>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredEbooks.map(bk => {
+                          const hasPromo = Boolean(bk.promoPriceFcfa);
+                          const discountPct = hasPromo ? Math.round(((bk.priceFcfa - bk.promoPriceFcfa) / bk.priceFcfa) * 100) : 0;
+
+                          return (
+                            <tr key={bk.id}>
+                              {ebookSelectionMode && (
+                                <td>
+                                  <input 
+                                    type="checkbox"
+                                    checked={selectedEbookIds.includes(bk.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedEbookIds([...selectedEbookIds, bk.id]);
+                                      } else {
+                                        setSelectedEbookIds(selectedEbookIds.filter(id => id !== bk.id));
+                                      }
+                                    }}
+                                  />
+                                </td>
+                              )}
+                              <td>
+                                <img 
+                                  src={bk.coverImage} 
+                                  alt={bk.title} 
+                                  style={{ width: '44px', height: '58px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-subtle)' }} 
+                                />
+                              </td>
+                              <td>
+                                <div style={{ fontWeight: 700, color: 'var(--secondary)' }}>
+                                  {bk.title}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', maxWidth: '300px' }}>
+                                  {bk.subtitle || bk.description?.substring(0, 80) + '...'}
+                                </div>
+                                {bk.isPack && bk.includedBooks && bk.includedBooks.length > 0 && (
+                                  <div style={{ marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                    {bk.includedBooks.map((item, i) => (
+                                      <span key={i} style={{ fontSize: '0.68rem', background: 'rgba(217, 119, 6, 0.1)', color: '#b45309', padding: '1px 6px', borderRadius: '3px' }}>
+                                        ✓ {item.substring(0, 24)}...
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </td>
+                              <td>
+                                {bk.isPack ? (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'linear-gradient(90deg, #d97706, #b45309)', color: '#ffffff', fontSize: '0.7rem', fontWeight: 800, padding: '3px 8px', borderRadius: '12px' }}>
+                                    <Layers size={12} />
+                                    PACK ({bk.includedBooks?.length || 2})
+                                  </span>
+                                ) : (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(22, 101, 52, 0.1)', color: 'var(--primary)', fontSize: '0.7rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px' }}>
+                                    <BookOpen size={12} />
+                                    E-BOOK SEUL
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                <span className="badge badge-agro" style={{ fontSize: '0.72rem' }}>
+                                  {bk.category}
+                                </span>
+                              </td>
+                              <td>
+                                <div style={{ fontWeight: 600, color: hasPromo ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: hasPromo ? 'line-through' : 'none', fontSize: '0.85rem' }}>
+                                  {bk.priceFcfa.toLocaleString()} FCFA
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                  ({bk.priceEur} €)
+                                </div>
+                              </td>
+                              <td>
+                                {hasPromo ? (
+                                  <div>
+                                    <div style={{ fontWeight: 800, color: '#16a34a', fontSize: '0.9rem' }}>
+                                      {bk.promoPriceFcfa.toLocaleString()} FCFA
+                                    </div>
+                                    <div style={{ fontSize: '0.72rem', color: '#d97706', fontWeight: 700 }}>
+                                      -{discountPct}% ({bk.promoPriceEur} €)
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                    Standard
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                <div style={{ fontSize: '0.78rem' }}>{bk.pages}</div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>PDF</div>
+                              </td>
+                              <td>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleEbookVisibility(bk)}
+                                  style={{
+                                    border: 'none',
+                                    background: bk.isVisible !== false ? 'rgba(22, 101, 52, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+                                    color: bk.isVisible !== false ? '#16a34a' : 'var(--text-muted)',
+                                    padding: '3px 8px',
+                                    borderRadius: '12px',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                  title="Cliquer pour basculer la visibilité"
+                                >
+                                  <Eye size={12} />
+                                  <span>{bk.isVisible !== false ? "Visible" : "Masqué"}</span>
+                                </button>
+                              </td>
+                              <td style={{ textAlign: 'right' }}>
+                                <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                                  <button
+                                    className="btn btn-outline"
+                                    style={{ padding: '5px 8px', fontSize: '0.75rem' }}
+                                    title={isEn ? "Edit" : "Modifier"}
+                                    onClick={() => startEditEbook(bk)}
+                                  >
+                                    <Edit size={14} />
+                                  </button>
+                                  <button
+                                    className="btn btn-outline"
+                                    style={{ padding: '5px 8px', fontSize: '0.75rem' }}
+                                    title={isEn ? "Duplicate" : "Dupliquer"}
+                                    onClick={() => duplicateEbook(bk)}
+                                  >
+                                    <Copy size={14} />
+                                  </button>
+                                  <button
+                                    className="btn btn-outline"
+                                    style={{ padding: '5px 8px', fontSize: '0.75rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
+                                    title={isEn ? "Delete" : "Supprimer"}
+                                    onClick={() => handleDeleteEbook(bk.id)}
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+            );
+          })()}
 
           {/* TAB 4: CLIENT MESSAGES */}
           {activeTab === 'messages' && (() => {
@@ -1386,6 +1830,17 @@ export default function AdminDashboard({
           lang={lang}
           showAlert={showAlert}
           showConfirm={showConfirm}
+        />
+      )}
+
+      {/* ADD/EDIT EBOOK FULL-PAGE EDITOR */}
+      {showEbookEditor && (
+        <EbookEditor
+          ebook={editingEbook}
+          onSave={handleEbookSave}
+          onCancel={() => { setShowEbookEditor(false); setEditingEbook(null); }}
+          allEbooks={ebooks}
+          lang={lang}
         />
       )}
     </div>

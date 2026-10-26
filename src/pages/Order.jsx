@@ -206,7 +206,7 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
       <div className="order-main">
         <h2 style={{ fontSize: '1.8rem', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <ShoppingCart size={28} />
-          <span>{t('orderTitle', lang)} ({cart.length} machine{cart.length > 1 ? 's' : ''})</span>
+          <span>{t('orderTitle', lang)} ({cart.length} {isEn ? `item${cart.length > 1 ? 's' : ''}` : `article${cart.length > 1 ? 's' : ''}`})</span>
         </h2>
 
         {cart.length === 0 ? (
@@ -219,14 +219,32 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
           </div>
         ) : (
           <div>
+            {cart.some(item => item.isEbook || item.isPack) && (
+              <div style={{ backgroundColor: 'rgba(22, 101, 52, 0.08)', border: '1px solid var(--primary)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', fontSize: '0.85rem', color: 'var(--primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <CheckCircle size={18} />
+                <span>
+                  {isEn 
+                    ? "Digital E-books & Packs included: Instant secure download links will be delivered by email upon confirmation."
+                    : "E-books & Packs numériques inclus : Vos liens de téléchargement sécurisés vous seront délivrés par e-mail dès confirmation."
+                  }
+                </span>
+              </div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {cart.map((item) => (
                 <div key={item.id} className="order-item">
                   <img src={item.image} alt={item.name} className="order-item-img" />
                   
                   <div className="order-item-details">
-                    <h4>{item.name}</h4>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('orderCategory', lang)} : {item.category}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <h4 style={{ margin: 0 }}>{item.name}</h4>
+                      {(item.isEbook || item.isPack) && (
+                        <span className="badge badge-special" style={{ fontSize: '0.65rem', background: item.isPack ? '#d97706' : 'var(--primary)', color: '#ffffff' }}>
+                          {item.isPack ? "Pack E-books" : "E-book"}
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>{t('orderCategory', lang)} : {item.category}</p>
                     <div style={{ marginTop: '8px', fontWeight: 700, color: 'var(--primary)' }}>
                       {item.priceFcfa.toLocaleString()} FCFA <span style={{ fontWeight: 500, fontSize: '0.75rem', color: 'var(--text-muted)' }}>({item.priceEur} €)</span>
                     </div>

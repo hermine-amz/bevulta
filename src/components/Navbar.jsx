@@ -20,6 +20,7 @@ export default function Navbar({
     { id: 'services', label: lang === 'fr' ? 'NOS RÉALISATIONS' : 'ACHIEVEMENTS' },
     { id: 'formations', label: lang === 'fr' ? 'FORMATIONS' : 'TRAININGS' },
     { id: 'catalog', label: lang === 'fr' ? 'PRODUITS' : 'PRODUCTS' },
+    { id: 'ebooks', label: lang === 'fr' ? 'E-BOOKS' : 'E-BOOKS' },
     { id: 'contact', label: lang === 'fr' ? 'CONTACT' : 'CONTACT' },
   ];
 

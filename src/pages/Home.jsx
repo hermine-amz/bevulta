@@ -11,11 +11,16 @@ import {
   Play, 
   Pause, 
   Handshake, 
-  Settings 
+  Settings,
+  BookOpen,
+  Layers,
+  Percent,
+  Download,
+  ShoppingCart
 } from 'lucide-react';
 import { t } from '../data/translations';
 
-export default function Home({ setCurrentPage, lang, products, setSelectedProduct }) {
+export default function Home({ setCurrentPage, lang, products, setSelectedProduct, ebooks = [], addToCart, showAlert }) {
   const [selectedCountry, setSelectedCountry] = useState('benin');
   const isEn = lang === 'en';
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -538,6 +543,204 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
             onClick={() => setCurrentPage('catalog')}
           >
             <span>{isEn ? "View Complete Catalog" : "Voir tout le catalogue"}</span>
+            <ArrowRight size={16} style={{ marginLeft: '8px' }} />
+          </button>
+        </div>
+      </section>
+
+      {/* Featured E-books & Packs Section */}
+      <section className="section" style={{ padding: '60px 24px', backgroundColor: 'var(--bg-surface)' }}>
+        <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto 48px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '30px', background: 'rgba(217, 119, 6, 0.12)', color: '#d97706', fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>
+            <BookOpen size={15} />
+            <span>{isEn ? "KNOW-HOW & PRACTICAL GUIDES" : "SAVOIR-FAIRE & GUIDES TECHNIQUES"}</span>
+          </div>
+          <h2 style={{ fontSize: '2.4rem', color: 'var(--secondary)', marginBottom: '16px', fontFamily: 'var(--font-heading)' }}>
+            {isEn ? "E-books & Complete Packs on Sale" : "E-books & Packs Pratiques en Promotion"}
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.6 }}>
+            {isEn 
+              ? "Industrial transformation procedures, diesel engine maintenance manuals and economical packs with up to 50% discount." 
+              : "Maîtrisez les procédés de transformation agro-alimentaire, la maintenance de vos moteurs et profitez de nos packs groupés à tarif réduit."}
+          </p>
+        </div>
+
+        {/* Ebooks Cards Row */}
+        <div 
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '28px',
+            maxWidth: '1200px',
+            margin: '0 auto'
+          }}
+        >
+          {ebooks.filter(e => e.isVisible !== false).slice(0, 3).map((book) => {
+            const hasPromo = Boolean(book.promoPriceFcfa);
+            const discountPct = hasPromo ? Math.round(((book.priceFcfa - book.promoPriceFcfa) / book.priceFcfa) * 100) : 0;
+
+            return (
+              <div
+                key={book.id}
+                style={{
+                  background: 'var(--bg-card)',
+                  borderRadius: 'var(--radius-md)',
+                  border: book.isPack ? '2px solid rgba(217, 119, 6, 0.4)' : '1px solid var(--border-subtle)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  boxShadow: book.isPack ? '0 12px 30px -10px rgba(217, 119, 6, 0.15)' : '0 8px 24px -10px rgba(0,0,0,0.06)',
+                  transition: 'transform 0.25s ease'
+                }}
+              >
+                {/* Pack Header if Pack */}
+                {book.isPack && (
+                  <div 
+                    style={{
+                      background: 'linear-gradient(90deg, #d97706, #b45309)',
+                      color: '#ffffff',
+                      padding: '6px 14px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Layers size={13} />
+                      PACK COMPLET ({book.includedBooks?.length || 2} LIVRES)
+                    </span>
+                    {discountPct > 0 && (
+                      <span style={{ background: '#ffffff', color: '#b45309', padding: '1px 6px', borderRadius: '8px', fontSize: '0.68rem', fontWeight: 800 }}>
+                        -{discountPct}% ÉCO
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Cover Image */}
+                <div style={{ position: 'relative', height: '190px', background: 'var(--bg-surface)' }}>
+                  <img 
+                    src={book.coverImage} 
+                    alt={book.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', gap: '6px' }}>
+                    <span style={{ padding: '3px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700, background: 'rgba(0,0,0,0.8)', color: '#ffffff' }}>
+                      {book.category}
+                    </span>
+                    {book.badge && (
+                      <span style={{ padding: '3px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800, background: book.isPack ? '#d97706' : 'var(--primary)', color: '#ffffff' }}>
+                        {book.badge}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Details */}
+                <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <h3 style={{ fontSize: '1.1rem', color: 'var(--secondary)', marginBottom: '6px', fontWeight: 700 }}>
+                    {book.title}
+                  </h3>
+                  <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.45, marginBottom: '14px', flex: 1 }}>
+                    {book.subtitle || book.description?.substring(0, 90) + '...'}
+                  </p>
+
+                  {/* Included books if Pack */}
+                  {book.isPack && book.includedBooks && book.includedBooks.length > 0 && (
+                    <div style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: 'var(--radius-sm)', marginBottom: '14px', fontSize: '0.76rem' }}>
+                      <strong style={{ color: '#d97706', display: 'block', marginBottom: '4px' }}>Inclus dans le pack :</strong>
+                      {book.includedBooks.slice(0, 3).map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)' }}>
+                          <CheckCircle size={12} color="#16a34a" />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                      {book.includedBooks.length > 3 && (
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: '2px' }}>
+                          + {book.includedBooks.length - 3} autre(s) guide(s)...
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Price Box */}
+                  <div style={{ background: hasPromo ? 'rgba(217, 119, 6, 0.05)' : 'var(--bg-surface)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', marginBottom: '14px' }}>
+                    {hasPromo ? (
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>
+                          {book.priceFcfa.toLocaleString()} FCFA ({book.priceEur} €)
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                          <strong style={{ fontSize: '1.35rem', color: 'var(--primary)' }}>
+                            {book.promoPriceFcfa.toLocaleString()} FCFA
+                          </strong>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            (≈ {book.promoPriceEur || Math.round(book.promoPriceFcfa / 655.957)} €)
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                        <strong style={{ fontSize: '1.35rem', color: 'var(--primary)' }}>
+                          {book.priceFcfa.toLocaleString()} FCFA
+                        </strong>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          ({book.priceEur} €)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Buttons */}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      className="btn btn-outline"
+                      style={{ padding: '8px 12px', fontSize: '0.82rem' }}
+                      onClick={() => setCurrentPage('ebooks')}
+                    >
+                      Détails
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      style={{ flex: 1, justifyContent: 'center', fontSize: '0.85rem', background: book.isPack ? 'linear-gradient(135deg, #d97706 0%, #b45309 100%)' : 'var(--primary)' }}
+                      onClick={() => {
+                        if (addToCart) {
+                          addToCart({
+                            id: `ebook-${book.id}`,
+                            name: book.title,
+                            priceFcfa: book.promoPriceFcfa || book.priceFcfa,
+                            priceEur: book.promoPriceEur || book.priceEur,
+                            category: book.isPack ? "Pack E-books" : "E-book & Guide",
+                            image: book.coverImage,
+                            isEbook: true,
+                            isPack: book.isPack
+                          });
+                          if (showAlert) showAlert(`"${book.title}" ajouté à votre devis / commande !`);
+                        } else {
+                          setCurrentPage('ebooks');
+                        }
+                      }}
+                    >
+                      <ShoppingCart size={15} style={{ marginRight: '6px' }} />
+                      <span>{book.isPack ? "Commander ce Pack" : "Commander"}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: '40px' }}>
+          <button 
+            className="btn btn-outline"
+            style={{ padding: '12px 28px', fontSize: '0.95rem' }}
+            onClick={() => setCurrentPage('ebooks')}
+          >
+            <span>{isEn ? "Explore all E-books and Packs" : "Voir tous les E-books et Packs"}</span>
             <ArrowRight size={16} style={{ marginLeft: '8px' }} />
           </button>
         </div>

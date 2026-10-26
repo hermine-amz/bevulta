@@ -193,14 +193,34 @@ export const translations = {
     dashOverview: "Statistiques",
     dashOrders: "Commandes & Devis",
     dashInventory: "Catalogue Machines",
+    dashEbooks: "E-books & Packs",
     dashMessages: "Messages Clients",
     dashSettings: "Paramètres",
-    dashSignOut: "Déconnexion"
+    dashSignOut: "Déconnexion",
+
+    // Ebooks Section
+    navEbooks: "E-Books & Guides",
+    ebooksBadge: "SAVOIR-FAIRE & INGÉNIERIE",
+    ebooksTitle: "E-books & Guides Pratiques Industriels",
+    ebooksDesc: "Guides techniques de transformation agro-alimentaire, manuels de maintenance des moteurs et packs complets en promotion pour réussir vos projets.",
+    ebooksFilterAll: "Tous",
+    ebooksFilterPacks: "Packs Complets",
+    ebooksPromoOnly: "En promotion",
+    ebookIncludedBooks: "Livres inclus dans ce pack :",
+    ebookBuyBtn: "Ajouter au Devis",
+    ebookBuyPackBtn: "Commander ce Pack",
+    ebookPromoBadge: "Promo Spéciale",
+    ebookSaveAmount: "Économisez",
+    ebookFormat: "Format :",
+    ebookPages: "Volume :",
+    ebookAuthor: "Auteur :",
+    ebookDigitalDeliveryNotice: "Téléchargement immédiat par lien sécurisé envoyé par email après validation.",
   },
   en: {
     // Navigation
     navHome: "Home",
     navCatalog: "Our Machines",
+    navEbooks: "E-Books & Guides",
     navServices: "Shipping & SAV",
     navAbout: "About Us",
     navContact: "Contact",
@@ -391,9 +411,27 @@ export const translations = {
     dashOverview: "Statistics",
     dashOrders: "Orders & Quotes",
     dashInventory: "Machinery Catalog",
+    dashEbooks: "E-books & Packs",
     dashMessages: "Client Messages",
     dashSettings: "Settings",
-    dashSignOut: "Logout"
+    dashSignOut: "Logout",
+
+    // Ebooks Section
+    ebooksBadge: "KNOW-HOW & ENGINEERING",
+    ebooksTitle: "Industrial E-books & Practical Guides",
+    ebooksDesc: "Agro-food processing procedural guides, engine maintenance manuals, and complete packs on sale to guarantee your project's success.",
+    ebooksFilterAll: "All",
+    ebooksFilterPacks: "Complete Packs",
+    ebooksPromoOnly: "On Sale",
+    ebookIncludedBooks: "Books included in this pack:",
+    ebookBuyBtn: "Add to Quote",
+    ebookBuyPackBtn: "Order this Pack",
+    ebookPromoBadge: "Special Promo",
+    ebookSaveAmount: "Save",
+    ebookFormat: "Format:",
+    ebookPages: "Volume:",
+    ebookAuthor: "Author:",
+    ebookDigitalDeliveryNotice: "Instant access & download link delivered securely by email upon confirmation.",
   }
 };
 
