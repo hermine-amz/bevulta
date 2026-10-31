@@ -10,11 +10,12 @@ import {
   ShieldCheck, 
   Zap, 
   Percent, 
-  CreditCard
+  CreditCard,
+  X,
+  FileText
 } from 'lucide-react';
 import { t } from '../data/translations';
 import { EBOOK_CATEGORIES } from '../data/initialEbooks';
-import { initiatePayment } from '../services/paymentService';
 import PaymentModal from '../components/PaymentModal';
 
 export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert, settings = {} }) {
@@ -81,13 +82,17 @@ export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert, setti
     const cartItem = {
       id: `ebook-${book.id}`,
       name: book.title,
+      title: book.title,
+      subtitle: book.subtitle,
+      author: book.author,
       priceFcfa: effectivePriceFcfa,
       priceEur: effectivePriceEur,
       category: book.isPack ? "Pack E-books" : "E-book & Guide",
       image: book.coverImage,
       isEbook: true,
       isPack: book.isPack,
-      format: book.fileFormat
+      format: book.fileFormat,
+      downloadUrl: book.downloadUrl
     };
 
     addToCart(cartItem);
@@ -103,41 +108,23 @@ export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert, setti
     const effectivePriceFcfa = book.promoPriceFcfa || book.priceFcfa;
     const effectivePriceEur = book.promoPriceEur || book.priceEur;
 
-    const paymentData = {
+    const modalData = {
+      isEbook: true,
       type: 'ebook',
-      item: {
-        id: book.id,
-        title: book.title,
-        priceFcfa: effectivePriceFcfa,
-        priceEur: effectivePriceEur,
-        isPack: book.isPack,
-        downloadUrl: book.downloadUrl
-      },
+      ebook: book,
+      item: book,
+      itemTitle: book.title,
       amountFcfa: effectivePriceFcfa,
       amountEur: effectivePriceEur,
-      description: `Achat E-book : ${book.title}`,
-      customer: {
+      orderId: `EBK-${Date.now().toString().slice(-6)}`,
+      clientInfo: {
         name: '',
         email: '',
         phone: ''
       }
     };
 
-    const handled = initiatePayment(paymentData, settings, {
-      onManualRequired: (data) => {
-        setPaymentModalData(data);
-      },
-      onSuccess: () => {
-        showAlert(isEn ? "Payment successful!" : "Paiement réussi !");
-      },
-      onError: (err) => {
-        showAlert(err?.message || (isEn ? "Payment failed" : "Erreur de paiement"));
-      }
-    });
-
-    if (handled === 'modal') {
-      setPaymentModalData(paymentData);
-    }
+    setPaymentModalData(modalData);
   };
 
   const isAlreadyInCart = (bookId) => {
@@ -617,10 +604,10 @@ export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert, setti
                   </div>
 
                   {/* Actions Buttons */}
-                  <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
                     <button
                       className="btn btn-outline"
-                      style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       title={isEn ? "View Details" : "Voir le sommaire et détails"}
                       onClick={() => setSelectedEbook(book)}
                     >
@@ -628,26 +615,48 @@ export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert, setti
                     </button>
 
                     <button
-                      className={`btn ${inCart ? 'btn-outline' : 'btn-primary'}`}
+                      className="btn btn-primary"
+                      style={{
+                        padding: '10px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(22, 163, 74, 0.25)'
+                      }}
+                      title={isEn ? "Direct Purchase & Instant Download" : "Paiement Mobile Money direct et téléchargement immédiat"}
+                      onClick={(e) => handleDirectBuy(book, e)}
+                    >
+                      <CreditCard size={15} />
+                      <span>{isEn ? "Buy" : "Acheter"}</span>
+                    </button>
+
+                    <button
+                      className={`btn ${inCart ? 'btn-outline' : 'btn-outline'}`}
                       style={{
                         flex: 1,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '8px',
-                        background: inCart 
-                          ? 'var(--bg-surface)' 
-                          : (book.isPack ? 'linear-gradient(135deg, #d97706 0%, #b45309 100%)' : 'var(--primary)'),
-                        color: inCart ? 'var(--primary)' : '#ffffff',
-                        border: inCart ? '1px solid var(--primary)' : 'none'
+                        gap: '6px',
+                        fontSize: '0.82rem',
+                        padding: '10px 8px',
+                        color: inCart ? 'var(--primary)' : 'inherit',
+                        borderColor: inCart ? 'var(--primary)' : 'var(--border-color)'
                       }}
                       onClick={(e) => handleAddToCart(book, e)}
                     >
-                      <ShoppingCart size={16} />
+                      <ShoppingCart size={15} />
                       <span style={{ fontWeight: 600 }}>
                         {inCart 
-                          ? (isEn ? "In Quote ✓" : "Dans le Devis ✓") 
-                          : (book.isPack ? t('ebookBuyPackBtn', lang) : t('ebookBuyBtn', lang))
+                          ? (isEn ? "In Quote ✓" : "Au Devis ✓") 
+                          : (isEn ? "+ Devis" : "+ Devis")
                         }
                       </span>
                     </button>

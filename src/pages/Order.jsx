@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus, Trash2, ShieldCheck, CheckCircle, FileText, CreditCard } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, ShieldCheck, CheckCircle, FileText, CreditCard, Download } from 'lucide-react';
 import { initiatePayment } from '../services/paymentService';
+import { downloadWatermarkedPdf } from '../services/pdfWatermarkService';
 import PaymentModal from '../components/PaymentModal';
 import { t } from '../data/translations';
 
@@ -20,9 +21,32 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [createdOrder, setCreatedOrder] = useState(null);
   const [paymentModalData, setPaymentModalData] = useState(null);
+  const [downloadingEbookId, setDownloadingEbookId] = useState(null);
+
+  const handleDownloadEbook = async (item) => {
+    try {
+      setDownloadingEbookId(item.id);
+      await downloadWatermarkedPdf(item, {
+        name: createdOrder?.clientName || 'Client BEVULTA',
+        email: createdOrder?.email || 'client@bevulta.com',
+        orderId: createdOrder?.id || 'CMD-BEVULTA'
+      });
+      showAlert(
+        lang === 'fr'
+          ? `L'e-book "${item.name}" a été téléchargé avec votre tatouage numérique personnalisé !`
+          : `E-book "${item.name}" downloaded with your personal security watermark!`
+      );
+    } catch (err) {
+      console.error("Ebook download error:", err);
+      showAlert(lang === 'fr' ? "Erreur lors du téléchargement." : "Download error.");
+    } finally {
+      setDownloadingEbookId(null);
+    }
+  };
 
   const handlePayOrder = () => {
     if (!createdOrder) return;
+    const hasEbooks = createdOrder.items.some(i => i.isEbook || i.category?.toLowerCase().includes('ebook'));
     initiatePayment({
       amountFcfa: createdOrder.totalFcfa,
       itemTitle: `Commande #${createdOrder.id}`,
@@ -36,7 +60,11 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
         showAlert(err.message || (lang === "fr" ? "Erreur de paiement." : "Payment error."));
       },
       onManualMoMo: (data) => {
-        setPaymentModalData(data);
+        setPaymentModalData({
+          ...data,
+          isEbook: hasEbooks,
+          ebook: hasEbooks ? createdOrder.items.find(i => i.isEbook || i.category?.toLowerCase().includes('ebook')) : null
+        });
       }
     });
   };
@@ -184,6 +212,87 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
               <span>{isEn ? "Pay Now" : "Payer Maintenant"} ({createdOrder.totalFcfa.toLocaleString()} FCFA)</span>
             </button>
           </div>
+
+          {/* E-books Direct Download Section (Anti-Sharing Watermarked) */}
+          {createdOrder.items.some(i => i.isEbook || i.category?.toLowerCase().includes('ebook')) && (
+            <div className="no-print" style={{
+              background: "linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)",
+              border: "2px solid #3b82f6",
+              borderRadius: "16px",
+              padding: "24px",
+              marginBottom: "28px",
+              textAlign: "left",
+              boxShadow: "0 4px 14px rgba(37, 99, 235, 0.08)"
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ background: '#dbeafe', color: '#1d4ed8', width: '42px', height: '42px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Download size={22} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#1e3a8a' }}>
+                    {isEn ? "Direct E-Book Downloads (Secured & Watermarked)" : "Téléchargement Direct de vos E-books (Sécurisés & Tatoués)"}
+                  </h4>
+                  <span style={{ fontSize: '0.82rem', color: '#4b5563' }}>
+                    {isEn 
+                      ? `Personalized anti-sharing copy stamped for ${createdOrder.clientName} (${createdOrder.email})`
+                      : `Exemplaire certifié anti-partage gravé au nom de ${createdOrder.clientName} (${createdOrder.email})`}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {createdOrder.items.filter(i => i.isEbook || i.category?.toLowerCase().includes('ebook')).map((item, idx) => (
+                  <div key={idx} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: '#ffffff',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: '12px',
+                    padding: '14px 18px',
+                    flexWrap: 'wrap',
+                    gap: '12px'
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>
+                        📖 {item.name}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
+                        Format : {item.format || 'PDF Haute Définition'} • Filigrane anti-partage actif
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={downloadingEbookId === item.id}
+                      className="btn btn-primary"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '10px 20px',
+                        borderRadius: '10px',
+                        background: '#2563eb',
+                        color: '#ffffff',
+                        fontWeight: 700,
+                        fontSize: '0.88rem',
+                        cursor: downloadingEbookId === item.id ? 'not-allowed' : 'pointer',
+                        border: 'none',
+                        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)'
+                      }}
+                      onClick={() => handleDownloadEbook(item)}
+                    >
+                      <Download size={16} />
+                      <span>
+                        {downloadingEbookId === item.id 
+                          ? (isEn ? "Generating..." : "Tatouage & Téléchargement...") 
+                          : (isEn ? "Download PDF" : "Télécharger directement")}
+                      </span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Official Printable Quotation Sheet (Clean A4 standard, prints beautifully) */}
           <div className="print-invoice-sheet" style={{
