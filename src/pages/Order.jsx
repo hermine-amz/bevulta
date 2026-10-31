@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus, Trash2, ShieldCheck, Landmark, CheckCircle, FileText, CreditCard } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, ShieldCheck, CheckCircle, FileText, CreditCard } from 'lucide-react';
 import { initiatePayment } from '../services/paymentService';
 import PaymentModal from '../components/PaymentModal';
 import { t } from '../data/translations';
@@ -133,79 +133,34 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
 
   if (orderSuccess && createdOrder) {
     return (
-      <div style={{ padding: '120px 24px 80px', maxWidth: '800px', margin: '0 auto', textAlign: 'center', animation: 'fadeIn 0.5s ease' }}>
-        <div className="glass-panel" style={{ padding: '48px' }}>
-          <CheckCircle size={72} className="text-accent" style={{ margin: '0 auto 24px' }} />
-          <h2 style={{ fontSize: '2.2rem', color: 'var(--secondary)', marginBottom: '16px' }}>{t('orderSuccessTitle', lang)}</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '32px' }}>
-            {t('orderSuccessDesc', lang)} <strong>{createdOrder.id}</strong>.
-          </p>
-
-          {/* Printable Invoice Summary */}
-          <div className="glass-panel" style={{
-            textAlign: 'left',
-            backgroundColor: 'rgba(255, 255, 255, 0.6)',
-            padding: '24px',
-            marginBottom: '32px'
-          }}>
-            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-              <FileText size={18} />
-              <span>{t('orderRecapTitle', lang)} {createdOrder.id}</span>
-            </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-              <div><strong>{t('orderRecapClient', lang)}</strong> {createdOrder.clientName}</div>
-              <div><strong>{t('orderRecapDate', lang)}</strong> {createdOrder.date}</div>
-              <div><strong>{t('orderRecapPhone', lang)}</strong> {createdOrder.phone}</div>
-              <div><strong>{t('orderRecapCountry', lang)}</strong> {createdOrder.country}</div>
-              <div style={{ gridColumn: 'span 2' }}><strong>{t('orderRecapAddress', lang)}</strong> {createdOrder.address}</div>
-            </div>
-
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', marginBottom: '16px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <th style={{ textAlign: 'left', paddingBottom: '8px' }}>{t('orderTableProduct', lang)}</th>
-                  <th style={{ textAlign: 'center', paddingBottom: '8px' }}>{t('orderTableQty', lang)}</th>
-                  <th style={{ textAlign: 'right', paddingBottom: '8px' }}>{t('orderTablePrice', lang)}</th>
-                  <th style={{ textAlign: 'right', paddingBottom: '8px' }}>{t('orderTableTotal', lang)}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {createdOrder.items.map((item, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                    <td style={{ padding: '8px 0' }}>{item.name}</td>
-                    <td style={{ textAlign: 'center', padding: '8px 0' }}>{item.quantity}</td>
-                    <td style={{ textAlign: 'right', padding: '8px 0' }}>{item.priceFcfa.toLocaleString()} FCFA</td>
-                    <td style={{ textAlign: 'right', padding: '8px 0' }}>{(item.priceFcfa * item.quantity).toLocaleString()} FCFA</td>
-                  </tr>
-                ))}
-                <tr>
-                  <td colSpan="3" style={{ padding: '8px 0', textAlign: 'right', fontWeight: 600 }}>{t('orderRecapSubtotal', lang)}</td>
-                  <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 600 }}>{createdOrder.subtotalFcfa.toLocaleString()} FCFA</td>
-                </tr>
-                <tr style={{ borderTop: '2px solid var(--border-color)' }}>
-                  <td colSpan="3" style={{ padding: '8px 0', textAlign: 'right', fontWeight: 800, fontSize: '1rem', color: 'var(--primary)' }}>{t('orderRecapTotal', lang)}</td>
-                  <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 800, fontSize: '1rem', color: 'var(--primary)' }}>
-                    {createdOrder.totalFcfa.toLocaleString()} FCFA <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>({createdOrder.totalEur.toLocaleString()} €)</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+      <>
+        <div style={{ padding: "100px 24px 60px", maxWidth: "850px", margin: "0 auto", textAlign: "center", animation: "fadeIn 0.5s ease" }}>
+          {/* Top Non-printable Congratulations */}
+          <div className="no-print" style={{ marginBottom: "24px" }}>
+            <CheckCircle size={64} style={{ color: "#16a34a", margin: "0 auto 16px" }} />
+            <h2 style={{ fontSize: "2rem", color: "#0f172a", marginBottom: "8px", fontWeight: 800 }}>
+              {isEn ? "Quote Request Submitted Successfully!" : "Votre Demande de Devis a été Enregistrée !"}
+            </h2>
+            <p style={{ color: "#64748b", fontSize: "1rem", margin: 0 }}>
+              {isEn ? "Your quotation reference is" : "Référence de votre dossier :"} <strong style={{ color: "#166534" }}>{createdOrder.id}</strong>
+            </p>
           </div>
 
-          {/* Direct Mobile Money Payment CTA */}
-          <div style={{
+          {/* Interactive Payment CTA (Only visible on screen, HIDDEN on paper print) */}
+          <div className="no-print" style={{
             background: "linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)",
             border: "2px solid #bbf7d0",
             borderRadius: "16px",
             padding: "24px",
-            marginBottom: "32px",
-            textAlign: "center"
+            marginBottom: "28px",
+            textAlign: "center",
+            boxShadow: "0 4px 14px rgba(22, 101, 52, 0.08)"
           }}>
-            <h4 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#166534", margin: "0 0 8px 0" }}>
+            <h4 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#166534", margin: "0 0 6px 0" }}>
               {isEn ? "Pay Online or by Mobile Money" : "Régler maintenant par Mobile Money / Carte"}
             </h4>
-            <p style={{ fontSize: "0.88rem", color: "#475569", margin: "0 0 16px 0" }}>
-              {isEn ? "Fast, secure payment via MTN MoMo, Moov Money, Wave, or Bank Card." : "Paiement direct sécurisé via MTN MoMo, Moov Money, Wave ou Carte Bancaire."}
+            <p style={{ fontSize: "0.85rem", color: "#475569", margin: "0 0 16px 0" }}>
+              {isEn ? "Fast and secure payment via MTN MoMo, Moov Money, Wave, or Bank Card." : "Réglez directement votre acompte ou commande par MTN MoMo, Moov Money, Wave ou Carte."}
             </p>
             <button
               type="button"
@@ -216,46 +171,212 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
                 alignItems: "center",
                 gap: "8px",
                 padding: "12px 28px",
-                fontSize: "1rem",
+                fontSize: "0.95rem",
                 fontWeight: 800,
                 background: "#16a34a",
                 border: "none",
-                cursor: "pointer"
+                borderRadius: "10px",
+                cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(22, 163, 74, 0.3)"
               }}
             >
-              <CreditCard size={20} />
+              <CreditCard size={18} />
               <span>{isEn ? "Pay Now" : "Payer Maintenant"} ({createdOrder.totalFcfa.toLocaleString()} FCFA)</span>
             </button>
           </div>
 
-          {/* Payment & Next Steps */}
-          <div style={{ textAlign: 'left', marginBottom: '32px' }}>
-            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--secondary)', marginBottom: '12px' }}>
-              <Landmark size={20} className="text-primary" />
-              <span>{t('orderRecapModalitiesTitle', lang)}</span>
-            </h4>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-              {t('orderRecapModalitiesDesc', lang)}
-            </p>
-            <ul style={{ listStyleType: 'disc', paddingLeft: '20px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              <li><strong>{t('orderRecapWire', lang).split(':')[0]} :</strong> {t('orderRecapWire', lang).split(':')[1]}</li>
-              <li><strong>{t('orderRecapWU', lang).split(':')[0]} :</strong> {t('orderRecapWU', lang).split(':')[1]}</li>
-            </ul>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '12px' }}>
-              {t('orderRecapInstructions', lang)}
-            </p>
+          {/* Official Printable Quotation Sheet (Clean A4 standard, prints beautifully) */}
+          <div className="print-invoice-sheet" style={{
+            textAlign: "left",
+            backgroundColor: "#ffffff",
+            padding: "32px",
+            borderRadius: "16px",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+            marginBottom: "28px"
+          }}>
+            {/* Header / Brand block */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #166534", paddingBottom: "16px", marginBottom: "20px", flexWrap: "wrap", gap: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <img
+                  src="/logo.jpg"
+                  alt="BEVULTA Logo"
+                  style={{ width: "56px", height: "56px", borderRadius: "50%", objectFit: "cover", border: "2px solid #166534" }}
+                />
+                <div>
+                  <h3 style={{ fontSize: "1.35rem", fontWeight: 900, color: "#0b2c5c", margin: 0 }}>
+                    {settings?.storeName || "BEVULTA"}
+                  </h3>
+                  <p style={{ fontSize: "0.78rem", color: "#475569", margin: "2px 0 0 0", fontWeight: 600 }}>
+                    {settings?.storeTagline || "Bureau d'Études et de Vulgarisation des Technologies Appropriées"}
+                  </p>
+                  <p style={{ fontSize: "0.74rem", color: "#64748b", margin: "2px 0 0 0" }}>
+                    {settings?.atelierAddress || "C/3474 Agla Von FAN-MILK, Cotonou, Bénin"} • Tél : {settings?.contactPhone1 || "(+229) 97 69 91 78"}
+                  </p>
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{
+                  display: "inline-block",
+                  padding: "4px 12px",
+                  background: "#f0fdf4",
+                  color: "#166534",
+                  fontWeight: 900,
+                  fontSize: "0.9rem",
+                  borderRadius: "6px",
+                  border: "1px solid #bbf7d0",
+                  letterSpacing: "0.04em"
+                }}>
+                  DEVIS PROFORMA
+                </div>
+                <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#0f172a", marginTop: "6px" }}>
+                  N° {createdOrder.id}
+                </div>
+                <div style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                  Date d'émission : {createdOrder.date}
+                </div>
+              </div>
+            </div>
+
+            {/* Client Info Grid */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: "12px",
+              padding: "14px 16px",
+              background: "#f8fafc",
+              borderRadius: "10px",
+              border: "1px solid #e2e8f0",
+              marginBottom: "20px",
+              fontSize: "0.85rem"
+            }}>
+              <div>
+                <div style={{ color: "#64748b", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.04em" }}>
+                  Bénéficiaire / Client
+                </div>
+                <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.95rem" }}>
+                  {createdOrder.clientName}
+                </div>
+                {createdOrder.company && (
+                  <div style={{ color: "#475569", fontWeight: 600 }}>{createdOrder.company}</div>
+                )}
+              </div>
+              <div>
+                <div style={{ color: "#64748b", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.04em" }}>
+                  Coordonnées & Destination
+                </div>
+                <div style={{ color: "#0f172a" }}>
+                  <strong>{createdOrder.phone}</strong> {createdOrder.email ? "• " + createdOrder.email : ""}
+                </div>
+                <div style={{ color: "#475569" }}>
+                  {createdOrder.country} — {createdOrder.address}
+                </div>
+              </div>
+            </div>
+
+            {/* Products Table */}
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.86rem", marginBottom: "20px" }}>
+              <thead>
+                <tr style={{ background: "#f1f5f9", borderBottom: "2px solid #cbd5e1", fontSize: "0.76rem", color: "#475569", textTransform: "uppercase" }}>
+                  <th style={{ textAlign: "left", padding: "10px 12px" }}>Désignation Équipement / Guide</th>
+                  <th style={{ textAlign: "center", padding: "10px 12px", width: "60px" }}>Qté</th>
+                  <th style={{ textAlign: "right", padding: "10px 12px", width: "140px" }}>Prix Unitaire</th>
+                  <th style={{ textAlign: "right", padding: "10px 12px", width: "160px" }}>Total (FCFA)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {createdOrder.items.map((item, idx) => (
+                  <tr key={idx} style={{ borderBottom: "1px solid #e2e8f0" }}>
+                    <td style={{ padding: "12px" }}>
+                      <div style={{ fontWeight: 700, color: "#0f172a" }}>{item.name}</div>
+                      {item.specs && item.specs["Motorisation"] && (
+                        <div style={{ fontSize: "0.75rem", color: "#166534", fontWeight: 600 }}>Option : {item.specs["Motorisation"]}</div>
+                      )}
+                    </td>
+                    <td style={{ textAlign: "center", padding: "12px", fontWeight: 700 }}>{item.quantity}</td>
+                    <td style={{ textAlign: "right", padding: "12px" }}>{item.priceFcfa.toLocaleString()} FCFA</td>
+                    <td style={{ textAlign: "right", padding: "12px", fontWeight: 800, color: "#0f172a" }}>
+                      {(item.priceFcfa * item.quantity).toLocaleString()} FCFA
+                    </td>
+                  </tr>
+                ))}
+                <tr style={{ background: "#f8fafc", borderTop: "2px solid #0f172a" }}>
+                  <td colSpan="3" style={{ padding: "14px 12px", textAlign: "right", fontWeight: 800, fontSize: "0.95rem", color: "#0f172a" }}>
+                    MONTANT TOTAL ESTIMÉ :
+                  </td>
+                  <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 900, fontSize: "1.2rem", color: "#166534" }}>
+                    {createdOrder.totalFcfa.toLocaleString()} FCFA
+                    <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 500 }}>
+                      (Soit env. {createdOrder.totalEur?.toLocaleString()} €)
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Official Terms & Workshop Notes */}
+            <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px", fontSize: "0.78rem", color: "#64748b", lineHeight: 1.5 }}>
+              <div style={{ fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
+                Conditions de validité & modalités d'atelier :
+              </div>
+              <div>• Le présent devis proforma est valable <strong>30 jours</strong> à compter de sa date d'émission.</div>
+              <div>• Fabrication sur mesure : acompte de 50% à la commande, solde à la livraison ou mise à disposition en atelier.</div>
+              <div>• Contact direct SAV & atelier : <strong>{settings?.contactPhone1 || "(+229) 97 69 91 78"}</strong> (Appels & WhatsApp) ou par e-mail à <strong>{settings?.contactEmail || "bevulta@gmail.com"}</strong>.</div>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-            <button className="btn btn-outline" onClick={() => window.print()}>
-              {t('btnPrintInvoice', lang)}
+          {/* Action Buttons (HIDDEN when printed) */}
+          <div className="no-print" style={{ display: "flex", gap: "14px", justifyContent: "center", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => window.print()}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "12px 24px",
+                borderRadius: "10px",
+                fontSize: "0.9rem",
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              <FileText size={18} />
+              <span>{isEn ? "Print Official Quote" : "Imprimer le Devis Officiel"}</span>
             </button>
-            <button className="btn btn-primary" onClick={() => setOrderSuccess(false)}>
-              {t('btnReturnSite', lang)}
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setOrderSuccess(false)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "12px 24px",
+                borderRadius: "10px",
+                fontSize: "0.9rem",
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              <span>{isEn ? "Return to Store" : "Retourner à la boutique"}</span>
             </button>
           </div>
+
+          {/* Payment Modal inside Order Confirmation */}
+          <PaymentModal
+            isOpen={paymentModalData !== null}
+            onClose={() => setPaymentModalData(null)}
+            paymentData={paymentModalData}
+            settings={settings}
+            lang={lang}
+            onConfirmPayment={() => {
+              showAlert(lang === "fr" ? "Paiement en cours de vérification. Merci !" : "Payment under verification. Thank you!");
+            }}
+          />
         </div>
-      </div>
+      </>
     );
   }
 

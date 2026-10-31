@@ -2525,5 +2525,63 @@ textarea.form-input {
   font-weight: 500;
 }
 
+/* ==========================================================================
+   OFFICIAL CLEAN PRINT STYLES FOR INVOICE / QUOTATION
+   ========================================================================== */
+@media print {
+  /* Hide all non-printable layout elements */
+  .navbar,
+  .footer,
+  .no-print,
+  .order-action-buttons,
+  .nav-controls,
+  .theme-toggle,
+  .lang-toggle,
+  .modal-overlay {
+    display: none !important;
+  }
+
+  body, html {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 10pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .order-page {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .print-invoice-sheet {
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .glass-panel {
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  th, td {
+    border-color: #e2e8f0 !important;
+  }
+}
+
 
 

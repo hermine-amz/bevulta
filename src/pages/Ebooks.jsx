@@ -2,27 +2,22 @@ import React, { useState } from 'react';
 import { 
   BookOpen, 
   Layers, 
-  Sparkles, 
   CheckCircle, 
   Download, 
   Search, 
-  Filter, 
-  Tag, 
-  FileText, 
-  ChevronRight, 
   ShoppingCart, 
   Eye, 
   ShieldCheck, 
   Zap, 
   Percent, 
-  BookCheck,
-  X,
-  ArrowRight
+  CreditCard
 } from 'lucide-react';
 import { t } from '../data/translations';
 import { EBOOK_CATEGORIES } from '../data/initialEbooks';
+import { initiatePayment } from '../services/paymentService';
+import PaymentModal from '../components/PaymentModal';
 
-export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert }) {
+export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert, settings = {} }) {
   const isEn = lang === 'en';
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,6 +25,7 @@ export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert }) {
   const [onlyPacks, setOnlyPacks] = useState(false);
   const [sortBy, setSortBy] = useState("featured"); // featured | price-asc | price-desc | discount
   const [selectedEbook, setSelectedEbook] = useState(null);
+  const [paymentModalData, setPaymentModalData] = useState(null);
 
   // Filtered & sorted ebooks
   const filteredEbooks = ebooks.filter(book => {
@@ -100,6 +96,48 @@ export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert }) {
         ? `"${book.title}" added to your quote / cart!` 
         : `"${book.title}" a été ajouté à votre devis / commande !`
     );
+  };
+
+  const handleDirectBuy = (book, e) => {
+    if (e) e.stopPropagation();
+    const effectivePriceFcfa = book.promoPriceFcfa || book.priceFcfa;
+    const effectivePriceEur = book.promoPriceEur || book.priceEur;
+
+    const paymentData = {
+      type: 'ebook',
+      item: {
+        id: book.id,
+        title: book.title,
+        priceFcfa: effectivePriceFcfa,
+        priceEur: effectivePriceEur,
+        isPack: book.isPack,
+        downloadUrl: book.downloadUrl
+      },
+      amountFcfa: effectivePriceFcfa,
+      amountEur: effectivePriceEur,
+      description: `Achat E-book : ${book.title}`,
+      customer: {
+        name: '',
+        email: '',
+        phone: ''
+      }
+    };
+
+    const handled = initiatePayment(paymentData, settings, {
+      onManualRequired: (data) => {
+        setPaymentModalData(data);
+      },
+      onSuccess: () => {
+        showAlert(isEn ? "Payment successful!" : "Paiement réussi !");
+      },
+      onError: (err) => {
+        showAlert(err?.message || (isEn ? "Payment failed" : "Erreur de paiement"));
+      }
+    });
+
+    if (handled === 'modal') {
+      setPaymentModalData(paymentData);
+    }
   };
 
   const isAlreadyInCart = (bookId) => {
@@ -349,7 +387,6 @@ export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert }) {
             const hasPromo = Boolean(book.promoPriceFcfa);
             const discountPct = calculateDiscountPercent(book.priceFcfa, book.promoPriceFcfa);
             const inCart = isAlreadyInCart(book.id);
-            const activePriceFcfa = hasPromo ? book.promoPriceFcfa : book.priceFcfa;
             const activePriceEur = hasPromo ? (book.promoPriceEur || Math.round(book.promoPriceFcfa / 655.957)) : book.priceEur;
 
             return (
@@ -728,25 +765,50 @@ export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert }) {
                       </div>
                     </div>
 
-                    <button
-                      className="btn btn-primary"
-                      style={{
-                        padding: '12px 24px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        background: selectedEbook.isPack ? 'linear-gradient(135deg, #d97706 0%, #b45309 100%)' : 'var(--primary)'
-                      }}
-                      onClick={() => {
-                        handleAddToCart(selectedEbook);
-                        setSelectedEbook(null);
-                      }}
-                    >
-                      <ShoppingCart size={18} />
-                      <span style={{ fontWeight: 700 }}>
-                        {selectedEbook.isPack ? "Commander ce Pack" : "Ajouter au Devis / Commande"}
-                      </span>
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <button
+                        className="btn btn-primary"
+                        style={{
+                          padding: '12px 20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          boxShadow: '0 4px 14px rgba(22, 163, 74, 0.3)'
+                        }}
+                        onClick={() => {
+                          const book = selectedEbook;
+                          setSelectedEbook(null);
+                          handleDirectBuy(book);
+                        }}
+                      >
+                        <CreditCard size={18} />
+                        <span style={{ fontWeight: 700 }}>
+                          {isEn ? "Pay with Mobile Money" : "Payer par Mobile Money"}
+                        </span>
+                      </button>
+
+                      <button
+                        className="btn btn-outline"
+                        style={{
+                          padding: '12px 20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                        onClick={() => {
+                          handleAddToCart(selectedEbook);
+                          setSelectedEbook(null);
+                        }}
+                      >
+                        <ShoppingCart size={18} />
+                        <span style={{ fontWeight: 700 }}>
+                          {selectedEbook.isPack ? (isEn ? "Add Pack to Quote" : "Ajouter au Devis") : (isEn ? "Add to Quote" : "Ajouter au Devis")}
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
