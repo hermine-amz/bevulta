@@ -2471,3 +2471,59 @@ textarea.form-input {
   }
 }
 
+/* ==========================================================================
+   CHARIOW-STYLE MODERN DASHBOARD ENHANCEMENTS
+   ========================================================================== */
+.admin-sidebar.collapsed {
+  width: 76px !important;
+}
+.admin-sidebar.collapsed .admin-logo span,
+.admin-sidebar.collapsed .admin-menu-item span,
+.admin-sidebar.collapsed .menu-badge,
+.admin-sidebar.collapsed .store-chevron {
+  display: none !important;
+}
+.admin-sidebar.collapsed .admin-menu-item {
+  justify-content: center !important;
+  padding: 12px 0 !important;
+}
+.admin-sidebar.collapsed .store-selector-box {
+  justify-content: center !important;
+  padding: 12px 0 !important;
+}
+
+.chariow-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 120px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  transition: all 0.2s ease;
+}
+.chariow-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.chariow-stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+.chariow-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+
+

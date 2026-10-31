@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Phone, Mail, MapPin, Send, CheckCircle } from 'lucide-react';
 import { t } from '../data/translations';
 
-export default function Contact({ onSendMessage, lang, showAlert }) {
+export default function Contact({ onSendMessage, lang, showAlert, settings = {} }) {
   const isEn = lang === 'en';
   
   const [formData, setFormData] = useState({
@@ -101,8 +101,8 @@ export default function Contact({ onSendMessage, lang, showAlert }) {
               </div>
               <div>
                 <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--secondary)' }}>{t('contactPhones', lang)}</h4>
-                <p style={{ color: 'var(--text-secondary)' }}>(+229) 97 69 91 78</p>
-                <p style={{ color: 'var(--text-secondary)' }}>(+229) 01 97 45 50 12 (WhatsApp Pro)</p>
+                <p style={{ color: 'var(--text-secondary)' }}>{settings?.contactPhone1 || '(+229) 97 69 91 78'}</p>
+                <p style={{ color: 'var(--text-secondary)' }}>{settings?.contactPhone2 || '(+229) 01 97 45 50 12 (WhatsApp Pro)'}</p>
               </div>
             </li>
             
@@ -112,7 +112,7 @@ export default function Contact({ onSendMessage, lang, showAlert }) {
               </div>
               <div>
                 <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--secondary)' }}>{t('contactEmail', lang)}</h4>
-                <p style={{ color: 'var(--text-secondary)' }}>bevulta@gmail.com</p>
+                <p style={{ color: 'var(--text-secondary)' }}>{settings?.contactEmail || 'bevulta@gmail.com'}</p>
               </div>
             </li>
 
@@ -122,7 +122,7 @@ export default function Contact({ onSendMessage, lang, showAlert }) {
               </div>
               <div>
                 <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--secondary)' }}>{t('contactAddresses', lang)}</h4>
-                <p style={{ color: 'var(--text-secondary)' }}><strong>{t('contactMainAtelier', lang)}</strong> C/3474 Agla Von FAN-MILK, Cotonou, Bénin</p>
+                <p style={{ color: 'var(--text-secondary)' }}><strong>{t('contactMainAtelier', lang)}</strong> {settings?.atelierAddress || 'C/3474 Agla Von FAN-MILK, Cotonou, Bénin'}</p>
                 <p style={{ color: 'var(--text-secondary)' }}><strong>{t('contactMainSiege', lang)}</strong> 10 BP 170 Houéyiho, Cotonou, Bénin</p>
               </div>
             </li>

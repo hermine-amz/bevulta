@@ -19,15 +19,17 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import { t } from '../data/translations';
+import { defaultSettings } from '../data/defaultSettings';
 
-export default function Home({ setCurrentPage, lang, products, setSelectedProduct, ebooks = [], addToCart, showAlert }) {
+export default function Home({ setCurrentPage, lang, products, setSelectedProduct, ebooks = [], addToCart, showAlert, settings = defaultSettings }) {
+  const activeSettings = { ...defaultSettings, ...(settings || {}) };
   const [selectedCountry, setSelectedCountry] = useState('benin');
   const isEn = lang === 'en';
   const [currentSlide, setCurrentSlide] = useState(0);
   const carouselImages = [
-    '/hero-machines.png',
-    '/hero-machines-2.png',
-    '/hero-machines-3.png'
+    activeSettings.heroImage1 || '/hero-machines.png',
+    activeSettings.heroImage2 || '/hero-machines-2.png',
+    activeSettings.heroImage3 || '/hero-machines-3.png'
   ];
 
   // Audio Synthesizer States (Web Audio API)
@@ -199,25 +201,62 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
   return (
     <div style={{ animation: 'fadeIn 0.5s ease' }}>
       
+      {/* Top Announcement Bar */}
+      {activeSettings.showHeroAnnouncement !== false && activeSettings.heroAnnouncement && (
+        <div style={{
+          background: 'linear-gradient(90deg, #166534 0%, #0b2c5c 100%)',
+          color: '#ffffff',
+          padding: '10px 16px',
+          fontSize: '0.86rem',
+          fontWeight: 600,
+          textAlign: 'center',
+          letterSpacing: '0.01em',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px'
+        }}>
+          <span>{activeSettings.heroAnnouncement}</span>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="hero" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' }}>
         <div className="hero-content-wrapper">
           
           <div className="hero-panel">
-            <h1>BEVULTA</h1>
+            {activeSettings.heroBadge && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(22, 101, 52, 0.1)',
+                color: 'var(--primary)',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                marginBottom: '12px',
+                width: 'fit-content'
+              }}>
+                {activeSettings.heroBadge}
+              </div>
+            )}
+
+            <h1>{activeSettings.storeName || "BEVULTA"}</h1>
             
             <h2>
-              {isEn 
+              {activeSettings.heroTitle || (isEn 
                 ? "Designer and Manufacturer of Agricultural and Industrial Machinery in West Africa"
-                : "Concepteur et Fabricant de Machines Agricoles et Industrielles en Afrique de l'Ouest"}
+                : "Concepteur et Fabricant de Machines Agricoles et Industrielles en Afrique de l'Ouest")}
             </h2>
 
             <div className="hero-divider"></div>
             
             <p>
-              {isEn
+              {activeSettings.heroSubtitle || (isEn
                 ? "From our factory in Cotonou, we manufacture high-quality food processing machines (cassava, shea butter, juices) and robust construction equipment tailored to African markets."
-                : "Depuis notre usine de Cotonou, nous concevons et fabriquons des machines de transformation agroalimentaire (manioc, karité, jus de fruits) et des équipements de BTP robustes adaptés aux exigences du continent."}
+                : "Depuis notre usine de Cotonou, nous concevons et fabriquons des machines de transformation agroalimentaire (manioc, karité, jus de fruits) et des équipements de BTP robustes adaptés aux exigences du continent.")}
             </p>
             
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
@@ -227,7 +266,7 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
                 style={{ backgroundColor: 'var(--primary)', backgroundImage: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
               >
                 <Settings size={18} />
-                <span>{isEn ? "Discover Our Machines" : "Découvrir Nos Machines"}</span>
+                <span>{activeSettings.heroCtaPrimary || (isEn ? "Discover Our Machines" : "Découvrir Nos Machines")}</span>
               </button>
               
               <button 
@@ -238,7 +277,7 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
                 }}
               >
                 <GraduationCap size={18} />
-                <span>{isEn ? "Our Trainings" : "Nos Formations"}</span>
+                <span>{activeSettings.heroCtaSecondary || (isEn ? "Our Trainings" : "Nos Formations")}</span>
               </button>
             </div>
           </div>
@@ -303,171 +342,180 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
       </section>
 
       {/* Audio / Musique Ribbon */}
-      <div className="audio-ribbon">
-        <div className="audio-title-block">
-          <Music size={20} />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.88rem', fontWeight: '800', letterSpacing: '0.05em' }}>{isEn ? "BEVULTA MUSIC" : "MUSIQUES BEVULTA"}</span>
-            <span style={{ fontSize: '0.72rem', color: '#a7f3d0' }}>{isEn ? "Listen to our tracks" : "Écoutez et partagez nos titres"}</span>
+      {activeSettings.showAudioSynthesizer !== false && (
+        <div className="audio-ribbon">
+          <div className="audio-title-block">
+            <Music size={20} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: '800', letterSpacing: '0.05em' }}>{isEn ? "BEVULTA MUSIC" : "MUSIQUES BEVULTA"}</span>
+              <span style={{ fontSize: '0.72rem', color: '#a7f3d0' }}>{isEn ? "Listen to our tracks" : "Écoutez et partagez nos titres"}</span>
+            </div>
+          </div>
+
+          <div className="audio-tracks">
+            {[
+              { id: 'hymne', label: isEn ? 'Hymn BEVULTA' : 'Hymme BEVULTA' },
+              { id: 'debout', label: isEn ? 'Afrique Debout' : 'Afrique Debout' },
+              { id: 'consommons', label: isEn ? 'Consommons Africains' : 'Consommons Africains' },
+              { id: 'construire', label: isEn ? 'Construire Afrique' : 'Construire Afrique' }
+            ].map((track) => {
+              const isPlaying = playingTrack === track.id;
+              return (
+                <button
+                  key={track.id}
+                  onClick={() => handleTrackClick(track.id)}
+                  className={`audio-track-btn ${isPlaying ? 'active' : ''}`}
+                >
+                  {isPlaying ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
+                  <span>{track.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Visualizer spectrum */}
+          <div className="audio-visualizer-wrap">
+            <div className={`visualizer-bar ${playingTrack ? 'playing' : ''}`}></div>
+            <div className={`visualizer-bar ${playingTrack ? 'playing' : ''}`}></div>
+            <div className={`visualizer-bar ${playingTrack ? 'playing' : ''}`}></div>
+            <div className={`visualizer-bar ${playingTrack ? 'playing' : ''}`}></div>
+            <div className={`visualizer-bar ${playingTrack ? 'playing' : ''}`}></div>
           </div>
         </div>
-
-        <div className="audio-tracks">
-          {[
-            { id: 'hymne', label: isEn ? 'Hymn BEVULTA' : 'Hymme BEVULTA' },
-            { id: 'debout', label: isEn ? 'Afrique Debout' : 'Afrique Debout' },
-            { id: 'consommons', label: isEn ? 'Consommons Africains' : 'Consommons Africains' },
-            { id: 'construire', label: isEn ? 'Construire Afrique' : 'Construire Afrique' }
-          ].map((track) => {
-            const isPlaying = playingTrack === track.id;
-            return (
-              <button
-                key={track.id}
-                onClick={() => handleTrackClick(track.id)}
-                className={`audio-track-btn ${isPlaying ? 'active' : ''}`}
-              >
-                {isPlaying ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
-                <span>{track.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Visualizer spectrum */}
-        <div className="audio-visualizer-wrap">
-          <div className={`visualizer-bar ${playingTrack ? 'playing' : ''}`}></div>
-          <div className={`visualizer-bar ${playingTrack ? 'playing' : ''}`}></div>
-          <div className={`visualizer-bar ${playingTrack ? 'playing' : ''}`}></div>
-          <div className={`visualizer-bar ${playingTrack ? 'playing' : ''}`}></div>
-          <div className={`visualizer-bar ${playingTrack ? 'playing' : ''}`}></div>
-        </div>
-      </div>
+      )}
 
       {/* 4 Pillars Section */}
-      <section className="pillars-section" id="pillars-section">
-        <div className="section-header" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 40px' }}>
-          <h2 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>
-            {isEn ? "Mechanization & Professional Technical Services" : "Notre Savoir-faire Technique et Industriel"}
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>
-            {isEn 
-              ? "We support agricultural processors and industrial operators through four key technical and educational pillars."
-              : "Nous accompagnons les transformateurs agricoles et les acteurs industriels à travers 4 piliers technologiques et pédagogiques."}
-          </p>
-        </div>
-
-        <div className="pillars-grid">
-          <div className="pillar-card">
-            <div className="pillar-icon-box">
-              <Wrench size={24} />
-            </div>
-            <h3>{isEn ? "CONCEPTION & MANUFACTURING" : "CONCEPTION & FABRICATION"}</h3>
-            <p>
+      {activeSettings.showPillarsSection !== false && (
+        <section className="pillars-section" id="pillars-section">
+          <div className="section-header" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 40px' }}>
+            <h2 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>
+              {isEn ? "Mechanization & Professional Technical Services" : "Notre Savoir-faire Technique et Industriel"}
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>
               {isEn 
-                ? "Local manufacturing of robust agricultural machinery and customized food processing equipment adapted to West African resources."
-                : "Conception et fabrication locale de machines agricoles et d'équipements industriels de haute précision adaptés aux réalités africaines."}
+                ? "We support agricultural processors and industrial operators through four key technical and educational pillars."
+                : "Nous accompagnons les transformateurs agricoles et les acteurs industriels à travers 4 piliers technologiques et pédagogiques."}
             </p>
           </div>
 
-          <div className="pillar-card">
-            <div className="pillar-icon-box">
-              <GraduationCap size={24} />
+          <div className="pillars-grid">
+            <div className="pillar-card">
+              <div className="pillar-icon-box">
+                <Wrench size={24} />
+              </div>
+              <h3>{isEn ? "CONCEPTION & MANUFACTURING" : "CONCEPTION & FABRICATION"}</h3>
+              <p>
+                {isEn 
+                  ? "Local manufacturing of robust agricultural machinery and customized food processing equipment adapted to West African resources."
+                  : "Conception et fabrication locale de machines agricoles et d'équipements industriels de haute précision adaptés aux réalités africaines."}
+              </p>
             </div>
-            <h3>{isEn ? "TECHNICAL TRAINING" : "FORMATION PROFESSIONNELLE"}</h3>
-            <p>
-              {isEn 
-                ? "Hands-on training in machine operation, industrial maintenance, and agricultural entrepreneurship to ensure local autonomy."
-                : "Formation technique pratique pour la maintenance de machines, la conduite d'équipements et l'entrepreneuriat agricole."}
-            </p>
-          </div>
 
-          <div className="pillar-card">
-            <div className="pillar-icon-box">
-              <Microscope size={24} />
+            <div className="pillar-card">
+              <div className="pillar-icon-box">
+                <GraduationCap size={24} />
+              </div>
+              <h3>{isEn ? "TECHNICAL TRAINING" : "FORMATION PROFESSIONNELLE"}</h3>
+              <p>
+                {isEn 
+                  ? "Hands-on training in machine operation, industrial maintenance, and agricultural entrepreneurship to ensure local autonomy."
+                  : "Formation technique pratique pour la maintenance de machines, la conduite d'équipements et l'entrepreneuriat agricole."}
+              </p>
             </div>
-            <h3>{isEn ? "RESEARCH & DEVELOPMENT" : "RECHERCHE & INNOVATION"}</h3>
-            <p>
-              {isEn 
-                ? "Continuous development of appropriate technologies, energy-efficient machines, and eco-friendly industrial systems."
-                : "Recherche et développement (R&D) de technologies appropriées, de machines peu énergivores et adaptées au climat local."}
-            </p>
-          </div>
 
-          <div className="pillar-card">
-            <div className="pillar-icon-box">
-              <Users size={24} />
+            <div className="pillar-card">
+              <div className="pillar-icon-box">
+                <Microscope size={24} />
+              </div>
+              <h3>{isEn ? "RESEARCH & DEVELOPMENT" : "RECHERCHE & INNOVATION"}</h3>
+              <p>
+                {isEn 
+                  ? "Continuous development of appropriate technologies, energy-efficient machines, and eco-friendly industrial systems."
+                  : "Recherche et développement (R&D) de technologies appropriées, de machines peu énergivores et adaptées au climat local."}
+              </p>
             </div>
-            <h3>{isEn ? "TECHNICAL SUPPORT & SAV" : "ACCOMPAGNEMENT & SAV"}</h3>
-            <p>
-              {isEn 
-                ? "Reactive after-sales service, direct machine installation, technical assistance, and permanent spare parts supply in Africa."
-                : "Service après-vente (SAV) réactif, installation sur site, assistance technique de proximité et pièces de rechange disponibles."}
-            </p>
+
+            <div className="pillar-card">
+              <div className="pillar-icon-box">
+                <Users size={24} />
+              </div>
+              <h3>{isEn ? "TECHNICAL SUPPORT & SAV" : "ACCOMPAGNEMENT & SAV"}</h3>
+              <p>
+                {isEn 
+                  ? "Reactive after-sales service, direct machine installation, technical assistance, and permanent spare parts supply in Africa."
+                  : "Service après-vente (SAV) réactif, installation sur site, assistance technique de proximité et pièces de rechange disponibles."}
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Stats Green Ribbon */}
-      <section className="stats-green-ribbon">
-        <div className="stats-green-grid">
-          <div className="stat-green-item">
-            <Handshake size={32} className="stat-green-icon" />
-            <h4>30+</h4>
-            <p>{isEn ? "Years of experience" : "Années d'expérience"}</p>
-          </div>
-          
-          <div className="stat-green-item">
-            <Settings size={32} className="stat-green-icon" />
-            <h4>100+</h4>
-            <p>{isEn ? "Machines manufactured" : "Machines fabriquées"}</p>
-          </div>
+      {activeSettings.showStatsRibbon !== false && (
+        <section className="stats-green-ribbon">
+          <div className="stats-green-grid">
+            <div className="stat-green-item">
+              <Handshake size={32} className="stat-green-icon" />
+              <h4>{activeSettings.stat1Number || "30+"}</h4>
+              <p>{activeSettings.stat1Label || (isEn ? "Years of experience" : "Années d'expérience")}</p>
+            </div>
+            
+            <div className="stat-green-item">
+              <Settings size={32} className="stat-green-icon" />
+              <h4>{activeSettings.stat2Number || "100+"}</h4>
+              <p>{activeSettings.stat2Label || (isEn ? "Machines manufactured" : "Machines fabriquées")}</p>
+            </div>
 
-          <div className="stat-green-item">
-            <GraduationCap size={32} className="stat-green-icon" />
-            <h4>5000+</h4>
-            <p>{isEn ? "Young technicians trained" : "Jeunes formés"}</p>
-          </div>
+            <div className="stat-green-item">
+              <GraduationCap size={32} className="stat-green-icon" />
+              <h4>{activeSettings.stat3Number || "5000+"}</h4>
+              <p>{activeSettings.stat3Label || (isEn ? "Young technicians trained" : "Jeunes formés")}</p>
+            </div>
 
-          <div className="stat-green-item">
-            <Globe size={32} className="stat-green-icon" />
-            <h4>100%</h4>
-            <p>{isEn ? "Impact in Africa" : "Impact en Afrique"}</p>
+            <div className="stat-green-item">
+              <Globe size={32} className="stat-green-icon" />
+              <h4>{activeSettings.stat4Number || "100%"}</h4>
+              <p>{activeSettings.stat4Label || (isEn ? "Impact in Africa" : "Impact en Afrique")}</p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Domaines d'Intervention Section */}
-      <section className="domains-section">
-        <div className="section-header" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 40px' }}>
-          <h2 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>
-            {isEn ? "Our Spheres of Action" : "Nos Domaines d'Intervention"}
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>
-            {isEn 
-              ? "We engineer solutions across key economic sectors to drive sustainable development."
-              : "Des technologies de pointe conçues pour dynamiser les secteurs clés de l'économie locale."}
-          </p>
-        </div>
+      {activeSettings.showDomainsSection !== false && (
+        <section className="domains-section">
+          <div className="section-header" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 40px' }}>
+            <h2 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>
+              {isEn ? "Our Spheres of Action" : "Nos Domaines d'Intervention"}
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>
+              {isEn 
+                ? "We engineer solutions across key economic sectors to drive sustainable development."
+                : "Des technologies de pointe conçues pour dynamiser les secteurs clés de l'économie locale."}
+            </p>
+          </div>
 
-        <div className="domains-grid">
-          {[
-            { label: isEn ? "AGRO-FOOD" : "AGROALIMENTAIRE", img: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=600" },
-            { label: isEn ? "AGRICULTURE" : "AGRICULTURE", img: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?q=80&w=600" },
-            { label: isEn ? "BTP & CONSTRUCTION" : "BTP & CONSTRUCTION", img: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=600" },
-            { label: isEn ? "CARPENTRY" : "MENUISERIE & MÉTALLURGIE", img: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=600" },
-            { label: isEn ? "RENEWABLE ENERGIES" : "ÉNERGIES RENOUVELABLES", img: "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?q=80&w=600" }
-          ].map((domain, index) => (
-            <div key={index} className="domain-card">
-              <img src={domain.img} alt={domain.label} />
-              <div className="domain-card-overlay">
-                <div className="domain-card-label">{domain.label}</div>
+          <div className="domains-grid">
+            {[
+              { label: isEn ? "AGRO-FOOD" : "AGROALIMENTAIRE", img: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=600" },
+              { label: isEn ? "AGRICULTURE" : "AGRICULTURE", img: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?q=80&w=600" },
+              { label: isEn ? "BTP & CONSTRUCTION" : "BTP & CONSTRUCTION", img: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=600" },
+              { label: isEn ? "CARPENTRY" : "MENUISERIE & MÉTALLURGIE", img: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=600" },
+              { label: isEn ? "RENEWABLE ENERGIES" : "ÉNERGIES RENOUVELABLES", img: "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?q=80&w=600" }
+            ].map((domain, index) => (
+              <div key={index} className="domain-card">
+                <img src={domain.img} alt={domain.label} />
+                <div className="domain-card-overlay">
+                  <div className="domain-card-label">{domain.label}</div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Featured Products Section */}
+      {activeSettings.showMachinesVedettes !== false && (
       <section className="section" style={{ backgroundColor: 'rgba(22, 101, 52, 0.02)', borderRadius: 'var(--radius-lg)', padding: '60px 24px' }}>
         <div className="section-header" style={{ marginBottom: '40px' }}>
           <h2>{isEn ? "Featured Industrial Solutions" : "Nos Machines Industrielles Vedettes"}</h2>
@@ -547,8 +595,10 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
           </button>
         </div>
       </section>
+      )}
 
       {/* Featured E-books & Packs Section */}
+      {activeSettings.showFormationsEbooks !== false && (
       <section className="section" style={{ padding: '60px 24px', backgroundColor: 'var(--bg-surface)' }}>
         <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto 48px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '30px', background: 'rgba(217, 119, 6, 0.12)', color: '#d97706', fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>
@@ -745,8 +795,10 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
           </button>
         </div>
       </section>
+      )}
 
       {/* Interactive Map Section */}
+      {activeSettings.showInteractiveMap !== false && (
       <section className="map-section" style={{ padding: '60px 24px' }}>
         <div className="map-container">
           <div>
@@ -864,22 +916,27 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
           </div>
         </div>
       </section>
+      )}
 
       {/* CTA Section */}
+      {activeSettings.showCtaBanner !== false && (
       <section className="section glass-panel" style={{ textAlign: 'center', background: 'linear-gradient(135deg, rgba(255,255,255,0.75) 0%, #f0fdf4 100%)', margin: '60px auto', padding: '60px 24px', maxWidth: '1200px' }}>
-        <h2 style={{ fontSize: '2.2rem', marginBottom: '16px', color: 'var(--secondary)' }}>{t('ctaTitle', lang)}</h2>
+        <h2 style={{ fontSize: '2.2rem', marginBottom: '16px', color: 'var(--secondary)' }}>
+          {activeSettings.ctaTitle || t('ctaTitle', lang)}
+        </h2>
         <p style={{ maxWidth: '600px', margin: '0 auto 32px', color: 'var(--text-secondary)' }}>
-          {t('ctaDesc', lang)}
+          {activeSettings.ctaDesc || t('ctaDesc', lang)}
         </p>
         <button 
           className="btn btn-primary"
           onClick={() => setCurrentPage('contact')}
           style={{ backgroundColor: 'var(--primary)', backgroundImage: 'none' }}
         >
-          <span>{t('ctaBtn', lang)}</span>
+          <span>{activeSettings.ctaBtn || t('ctaBtn', lang)}</span>
           <ArrowRight size={18} />
         </button>
       </section>
+      )}
     </div>
   );
 }

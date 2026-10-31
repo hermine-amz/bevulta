@@ -17,6 +17,7 @@ import Ebooks from './pages/Ebooks';
 // Initial Data
 import { initialProducts } from './data/initialProducts';
 import { initialEbooks } from './data/initialEbooks';
+import { defaultSettings } from './data/defaultSettings';
 import { Lock, User, LayoutDashboard, KeyRound, Globe, Sun, Moon, ShoppingCart } from 'lucide-react';
 import { t } from './data/translations';
 import { supabase } from './supabaseClient';
@@ -142,11 +143,9 @@ export default function App() {
   });
   const [orders, setOrders] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [settings, setSettings] = useState({
-    contactPhone1: '(+229) 97 69 91 78',
-    contactPhone2: '(+229) 01 97 45 50 12',
-    contactEmail: 'bevulta@gmail.com',
-    atelierAddress: 'C/3474 Agla Von FAN-MILK, Cotonou, Bénin',
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem('bevulta_settings');
+    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
   });
 
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -257,11 +256,17 @@ export default function App() {
         // Fetch settings
         const { data: setData, error: setErr } = await supabase.from('settings').select('*');
         if (!setErr && setData && setData.length > 0) {
-          const newSettings = { ...settings };
-          setData.forEach(s => {
-            if (newSettings[s.key] !== undefined) newSettings[s.key] = s.value;
+          setSettings(prev => {
+            const updated = { ...prev };
+            setData.forEach(s => {
+              let val = s.value;
+              if (val === 'true') val = true;
+              if (val === 'false') val = false;
+              updated[s.key] = val;
+            });
+            localStorage.setItem('bevulta_settings', JSON.stringify(updated));
+            return updated;
           });
-          setSettings(newSettings);
         }
 
         // Fetch ebooks
@@ -715,10 +720,11 @@ export default function App() {
 
   const updateSettings = async (newSettings) => {
     setSettings(newSettings);
+    localStorage.setItem('bevulta_settings', JSON.stringify(newSettings));
     try {
       const upserts = Object.keys(newSettings).map(key => ({
         key,
-        value: newSettings[key]
+        value: typeof newSettings[key] === 'boolean' ? String(newSettings[key]) : (newSettings[key] ?? '')
       }));
       await supabase.from('settings').upsert(upserts);
     } catch (err) {
@@ -1008,6 +1014,7 @@ export default function App() {
             ebooks={ebooks}
             addToCart={addToCart}
             showAlert={showAlert}
+            settings={settings}
           />
         )}
         {currentPage === 'catalog' && (
@@ -1034,7 +1041,7 @@ export default function App() {
         )}
         {currentPage === 'services' && <Services lang={lang} />}
         {currentPage === 'about' && <About lang={lang} />}
-        {currentPage === 'contact' && <Contact onSendMessage={handleSendMessage} lang={lang} showAlert={showAlert} showConfirm={showConfirm} />}
+        {currentPage === 'contact' && <Contact onSendMessage={handleSendMessage} lang={lang} showAlert={showAlert} showConfirm={showConfirm} settings={settings} />}
         {currentPage === 'order' && (
           <Order 
             cart={cart} 
@@ -1210,7 +1217,7 @@ export default function App() {
         </div>
       )}
 
-      <Footer setCurrentPage={setCurrentPage} lang={lang} />
+      <Footer setCurrentPage={setCurrentPage} lang={lang} settings={settings} />
 
       {/* TOAST NOTIFICATIONS */}
       <div style={{

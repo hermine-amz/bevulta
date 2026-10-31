@@ -2,7 +2,7 @@ import React from 'react';
 import { Mail, Phone, MapPin, Globe } from 'lucide-react';
 import { t } from '../data/translations';
 
-export default function Footer({ setCurrentPage, lang }) {
+export default function Footer({ setCurrentPage, lang, settings = {} }) {
   const isEn = lang === 'en';
 
   return (
@@ -57,15 +57,15 @@ export default function Footer({ setCurrentPage, lang }) {
           <ul className="footer-links" style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', padding: 0, fontSize: '0.9rem', color: '#a7f3d0' }}>
             <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <MapPin size={16} style={{ color: '#22c55e', flexShrink: 0 }} />
-              <span>{isEn ? "HQ: Agla, Cotonou - Benin" : "Siège : Agla, Cotonou - Bénin"}</span>
+              <span>{settings?.atelierAddress || (isEn ? "HQ: Agla, Cotonou - Benin" : "Siège : Agla, Cotonou - Bénin")}</span>
             </li>
             <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Phone size={16} style={{ color: '#22c55e', flexShrink: 0 }} />
-              <span>+229 97 67 79 60 / 95 96 27 27</span>
+              <span>{settings?.contactPhone1 || "+229 97 67 79 60 / 95 96 27 27"}</span>
             </li>
             <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Mail size={16} style={{ color: '#22c55e', flexShrink: 0 }} />
-              <span>contact@bevulta.com</span>
+              <span>{settings?.contactEmail || "contact@bevulta.com"}</span>
             </li>
             <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Globe size={16} style={{ color: '#22c55e', flexShrink: 0 }} />
@@ -88,7 +88,7 @@ export default function Footer({ setCurrentPage, lang }) {
           <a href="https://twitter.com" target="_blank" rel="noreferrer" style={{ color: '#a7f3d0' }} className="social-icon">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
           </a>
-          <a href="https://youtube.com" target="_blank" rel="noreferrer" style={{ color: '#a7f3d0' }} className="social-icon">
+          <a href={settings?.youtubeUrl || "https://youtube.com"} target="_blank" rel="noreferrer" style={{ color: '#a7f3d0' }} className="social-icon">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg>
           </a>
           <a href="https://linkedin.com" target="_blank" rel="noreferrer" style={{ color: '#a7f3d0' }} className="social-icon">

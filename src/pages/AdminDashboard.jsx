@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   BarChart3, Package, FileText, Mail, Settings, LogOut, Lock, 
   User, Plus, Trash2, Edit, Check, Eye, Trash, RefreshCw, X, Sun, Moon, Globe, Home, Phone, MapPin, ChevronLeft, ChevronRight,
-  BookOpen, Layers, Percent, Download, Copy
+  BookOpen, Layers, Copy,
+  ShoppingBag, Users, CircleDollarSign, Megaphone, LayoutTemplate, Headphones,
+  PanelLeftClose, PanelLeftOpen, ExternalLink, ChevronsUpDown,
+  Info, MessageCircle
 } from 'lucide-react';
 import { CATEGORIES, CATEGORY_KEYS } from '../data/categories';
 import { t } from '../data/translations';
 import ProductEditor from './ProductEditor';
 import OrderEditor from './OrderEditor';
 import EbookEditor from './EbookEditor';
+import LandingPageEditor from '../components/LandingPageEditor';
 
 export default function AdminDashboard({ 
   products, addProduct, updateProduct, deleteProduct,
@@ -22,6 +26,18 @@ export default function AdminDashboard({
   const [activeTab, setActiveTab] = useState(() => {
     return sessionStorage.getItem('bevulta_admin_tab') || 'overview';
   });
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('bevulta_sidebar_collapsed') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('bevulta_sidebar_collapsed', isSidebarCollapsed ? 'true' : 'false');
+  }, [isSidebarCollapsed]);
+
+  // Clients Directory Filter State
+  const [clientSearch, setClientSearch] = useState('');
+  const [clientCountryFilter, setClientCountryFilter] = useState('all');
 
   useEffect(() => {
     sessionStorage.setItem('bevulta_admin_tab', activeTab);
@@ -75,6 +91,100 @@ export default function AdminDashboard({
   const pendingRevenue = orders
     .filter(o => o.status === 'pending' || o.status === 'manufacturing')
     .reduce((sum, o) => sum + o.totalFcfa, 0);
+
+  // Revenue from the last 7 days
+  const sevenDaysRevenue = useMemo(() => {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return orders
+      .filter(o => {
+        if (!o.date) return false;
+        let d;
+        if (o.date.includes('/')) {
+          const [day, month, year] = o.date.split('/');
+          d = new Date(`${year}-${month}-${day}`);
+        } else {
+          d = new Date(o.date);
+        }
+        return d >= sevenDaysAgo && (o.status === 'delivered' || o.status === 'shipped');
+      })
+      .reduce((sum, o) => sum + (o.totalFcfa || 0), 0);
+  }, [orders]);
+
+  // Clients Directory from orders and messages
+  const clientsList = useMemo(() => {
+    const clientsMap = {};
+    orders.forEach(o => {
+      const key = o.email || o.phone || o.clientName;
+      if (!key) return;
+      if (!clientsMap[key]) {
+        clientsMap[key] = {
+          id: key,
+          name: o.clientName || 'Client',
+          email: o.email || '',
+          phone: o.phone || '',
+          company: o.company || '',
+          country: o.country || 'Bénin',
+          ordersCount: 0,
+          totalSpent: 0,
+          lastDate: o.date || ''
+        };
+      }
+      clientsMap[key].ordersCount += 1;
+      if (o.status === 'delivered' || o.status === 'shipped') {
+        clientsMap[key].totalSpent += (o.totalFcfa || 0);
+      }
+    });
+
+    messages.forEach(m => {
+      const key = m.email || m.phone || m.name;
+      if (!key) return;
+      if (!clientsMap[key]) {
+        clientsMap[key] = {
+          id: key,
+          name: m.name || 'Prospect',
+          email: m.email || '',
+          phone: m.phone || '',
+          company: '',
+          country: m.country || 'Bénin',
+          ordersCount: 0,
+          totalSpent: 0,
+          lastDate: m.date || ''
+        };
+      }
+    });
+    return Object.values(clientsMap);
+  }, [orders, messages]);
+
+  const totalClientsCount = clientsList.length;
+
+  // Best Selling Products calculation
+  const topSellingProducts = useMemo(() => {
+    const productSalesMap = {};
+    orders.forEach(o => {
+      (o.items || []).forEach(item => {
+        const pId = item.id || item.productId;
+        const pName = item.name;
+        const key = pId ? `id-${pId}` : `name-${pName}`;
+        if (!key) return;
+        if (!productSalesMap[key]) {
+          const matched = products.find(p => p.id === pId || p.name === pName);
+          productSalesMap[key] = {
+            id: pId,
+            name: matched?.name || pName || 'Machine',
+            category: matched?.category || item.category || 'Équipement',
+            image: matched?.image || '/hero.png',
+            unitsSold: 0,
+            totalRevenue: 0,
+            priceFcfa: matched?.priceFcfa || item.priceFcfa || 0
+          };
+        }
+        productSalesMap[key].unitsSold += (item.quantity || 1);
+        productSalesMap[key].totalRevenue += ((item.priceFcfa || 0) * (item.quantity || 1));
+      });
+    });
+    return Object.values(productSalesMap).sort((a, b) => b.totalRevenue - a.totalRevenue);
+  }, [orders, products]);
 
   const getVentesParPays = () => {
     const data = { 'Bénin': 0, 'Togo': 0, 'Burkina Faso': 0, 'Niger': 0, 'Côte d\'Ivoire': 0, 'Autre': 0 };
@@ -279,103 +389,452 @@ export default function AdminDashboard({
 
   return (
     <div className="admin-shell" style={{ height: '100vh', overflow: 'hidden' }}>
-      {/* Sidebar navigation */}
-      <aside className="admin-sidebar" style={{ overflowY: 'auto' }}>
-        <div className="admin-logo">
-          <span>ADMIN BEVULTA</span>
-        </div>
-        <nav className="admin-menu">
-          <button 
-            className="admin-menu-item"
-            onClick={goHome}
+      {/* Sidebar navigation (Chariow Style) */}
+      <aside 
+        className={`admin-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`} 
+        style={{ 
+          width: isSidebarCollapsed ? '76px' : '250px', 
+          transition: 'width 0.25s ease', 
+          overflowY: 'auto',
+          backgroundColor: '#ffffff',
+          borderRight: '1px solid #e5e7eb',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        {/* Store Selector Pill at Top */}
+        <div style={{ padding: '16px 12px', borderBottom: '1px solid #f1f5f9' }}>
+          <div 
+            className="store-selector-box"
+            onClick={() => setActiveTab('landing_page')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: isSidebarCollapsed ? 'center' : 'space-between',
+              padding: '8px 10px',
+              borderRadius: '12px',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            title={settings?.storeName || 'Bevulta'}
           >
-            <Home size={18} />
-            <span>{t('navHome', lang)}</span>
-          </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                background: '#0f172a',
+                color: '#facc15',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: '0.95rem',
+                flexShrink: 0
+              }}>
+                {(settings?.storeName || 'Bevulta').charAt(0).toUpperCase()}
+              </div>
+              {!isSidebarCollapsed && (
+                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {settings?.storeName || 'Bevulta'}
+                  </span>
+                  <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                    {isEn ? "Online Store" : "Boutique en ligne"}
+                  </span>
+                </div>
+              )}
+            </div>
+            {!isSidebarCollapsed && (
+              <ChevronsUpDown size={14} color="#94a3b8" className="store-chevron" />
+            )}
+          </div>
+        </div>
+
+        {/* Navigation Menu */}
+        <nav className="admin-menu" style={{ padding: '16px 10px', gap: '4px', flexGrow: 1 }}>
+          
+          {/* 1. Accueil */}
           <button 
             className={`admin-menu-item ${activeTab === 'overview' ? 'active' : ''}`}
             onClick={() => setActiveTab('overview')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'overview' ? '#f1f5f9' : 'transparent',
+              color: activeTab === 'overview' ? '#0f172a' : '#64748b',
+              fontWeight: activeTab === 'overview' ? 700 : 500
+            }}
+            title={isEn ? "Home" : "Accueil"}
           >
-            <BarChart3 size={18} />
-            <span>{t('dashOverview', lang)}</span>
+            <Home size={18} />
+            {!isSidebarCollapsed && <span>{isEn ? "Home" : "Accueil"}</span>}
           </button>
+
+          {/* 2. Ventes */}
           <button 
             className={`admin-menu-item ${activeTab === 'orders' ? 'active' : ''}`}
             onClick={() => setActiveTab('orders')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'orders' ? '#f1f5f9' : 'transparent',
+              color: activeTab === 'orders' ? '#0f172a' : '#64748b',
+              fontWeight: activeTab === 'orders' ? 700 : 500
+            }}
+            title={isEn ? "Sales & Orders" : "Ventes"}
           >
-            <FileText size={18} />
-            <span>{t('dashOrders', lang)}</span>
-            {orders.filter(o => o.status === 'pending').length > 0 && (
-              <span style={{ backgroundColor: 'var(--accent)', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', marginLeft: 'auto' }}>
+            <ShoppingBag size={18} />
+            {!isSidebarCollapsed && <span>{isEn ? "Sales" : "Ventes"}</span>}
+            {!isSidebarCollapsed && orders.filter(o => o.status === 'pending').length > 0 && (
+              <span className="menu-badge" style={{ backgroundColor: '#ea580c', color: 'white', borderRadius: '10px', padding: '1px 7px', fontSize: '0.72rem', marginLeft: 'auto', fontWeight: 700 }}>
                 {orders.filter(o => o.status === 'pending').length}
               </span>
             )}
           </button>
+
+          {/* 3. Produits */}
           <button 
             className={`admin-menu-item ${activeTab === 'inventory' ? 'active' : ''}`}
             onClick={() => setActiveTab('inventory')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'inventory' ? '#f1f5f9' : 'transparent',
+              color: activeTab === 'inventory' ? '#0f172a' : '#64748b',
+              fontWeight: activeTab === 'inventory' ? 700 : 500
+            }}
+            title={isEn ? "Products" : "Produits"}
           >
             <Package size={18} />
-            <span>{t('dashInventory', lang)}</span>
+            {!isSidebarCollapsed && <span>{isEn ? "Products" : "Produits"}</span>}
+            {!isSidebarCollapsed && (
+              <span className="menu-badge" style={{ backgroundColor: '#f1f5f9', color: '#475569', borderRadius: '10px', padding: '1px 7px', fontSize: '0.72rem', marginLeft: 'auto', fontWeight: 700 }}>
+                {products.length}
+              </span>
+            )}
           </button>
+
+          {/* 4. Clients */}
+          <button 
+            className={`admin-menu-item ${activeTab === 'clients' ? 'active' : ''}`}
+            onClick={() => setActiveTab('clients')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'clients' ? '#f1f5f9' : 'transparent',
+              color: activeTab === 'clients' ? '#0f172a' : '#64748b',
+              fontWeight: activeTab === 'clients' ? 700 : 500
+            }}
+            title={isEn ? "Customers" : "Clients"}
+          >
+            <Users size={18} />
+            {!isSidebarCollapsed && <span>{isEn ? "Customers" : "Clients"}</span>}
+            {!isSidebarCollapsed && totalClientsCount > 0 && (
+              <span className="menu-badge" style={{ backgroundColor: '#f1f5f9', color: '#475569', borderRadius: '10px', padding: '1px 7px', fontSize: '0.72rem', marginLeft: 'auto', fontWeight: 700 }}>
+                {totalClientsCount}
+              </span>
+            )}
+          </button>
+
+          {/* 5. Revenus */}
+          <button 
+            className={`admin-menu-item ${activeTab === 'revenue' ? 'active' : ''}`}
+            onClick={() => setActiveTab('revenue')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'revenue' ? '#f1f5f9' : 'transparent',
+              color: activeTab === 'revenue' ? '#0f172a' : '#64748b',
+              fontWeight: activeTab === 'revenue' ? 700 : 500
+            }}
+            title={isEn ? "Revenue" : "Revenus"}
+          >
+            <CircleDollarSign size={18} />
+            {!isSidebarCollapsed && <span>{isEn ? "Revenue" : "Revenus"}</span>}
+          </button>
+
+          {/* 6. Analytiques */}
+          <button 
+            className={`admin-menu-item ${activeTab === 'analytics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('analytics')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'analytics' ? '#f1f5f9' : 'transparent',
+              color: activeTab === 'analytics' ? '#0f172a' : '#64748b',
+              fontWeight: activeTab === 'analytics' ? 700 : 500
+            }}
+            title={isEn ? "Analytics" : "Analytiques"}
+          >
+            <BarChart3 size={18} />
+            {!isSidebarCollapsed && <span>{isEn ? "Analytics" : "Analytiques"}</span>}
+          </button>
+
+          {/* 7. Marketing */}
+          <button 
+            className={`admin-menu-item ${activeTab === 'marketing' ? 'active' : ''}`}
+            onClick={() => setActiveTab('marketing')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'marketing' ? '#f1f5f9' : 'transparent',
+              color: activeTab === 'marketing' ? '#0f172a' : '#64748b',
+              fontWeight: activeTab === 'marketing' ? 700 : 500
+            }}
+            title={isEn ? "Marketing" : "Marketing"}
+          >
+            <Megaphone size={18} />
+            {!isSidebarCollapsed && <span>{isEn ? "Marketing" : "Marketing"}</span>}
+          </button>
+
+          {/* 8. Landing Page Customizer */}
+          <button 
+            className={`admin-menu-item ${activeTab === 'landing_page' ? 'active' : ''}`}
+            onClick={() => setActiveTab('landing_page')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'landing_page' ? '#f0fdf4' : 'transparent',
+              color: activeTab === 'landing_page' ? '#166534' : '#64748b',
+              fontWeight: activeTab === 'landing_page' ? 800 : 500
+            }}
+            title={isEn ? "Landing Page Editor" : "Landing Page"}
+          >
+            <LayoutTemplate size={18} color={activeTab === 'landing_page' ? '#166534' : 'currentColor'} />
+            {!isSidebarCollapsed && <span>{isEn ? "Landing Page" : "Landing Page"}</span>}
+            {!isSidebarCollapsed && (
+              <span className="menu-badge" style={{ backgroundColor: '#dcfce7', color: '#166534', borderRadius: '8px', padding: '1px 6px', fontSize: '0.68rem', marginLeft: 'auto', fontWeight: 800 }}>
+                Vitrine
+              </span>
+            )}
+          </button>
+
+          {/* 9. E-books & Formations */}
           <button 
             className={`admin-menu-item ${activeTab === 'ebooks' ? 'active' : ''}`}
             onClick={() => setActiveTab('ebooks')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'ebooks' ? '#f1f5f9' : 'transparent',
+              color: activeTab === 'ebooks' ? '#0f172a' : '#64748b',
+              fontWeight: activeTab === 'ebooks' ? 700 : 500
+            }}
+            title={isEn ? "E-books & Guides" : "E-books & Formations"}
           >
             <BookOpen size={18} />
-            <span>{t('dashEbooks', lang)}</span>
-            {ebooks.length > 0 && (
-              <span style={{ backgroundColor: 'var(--accent-orange)', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', marginLeft: 'auto' }}>
+            {!isSidebarCollapsed && <span>{isEn ? "E-books" : "E-books & Guides"}</span>}
+            {!isSidebarCollapsed && ebooks.length > 0 && (
+              <span className="menu-badge" style={{ backgroundColor: 'rgba(217, 119, 6, 0.15)', color: '#d97706', borderRadius: '10px', padding: '1px 7px', fontSize: '0.72rem', marginLeft: 'auto', fontWeight: 700 }}>
                 {ebooks.length}
               </span>
             )}
           </button>
+
+          {/* 10. Messages Clients */}
           <button 
             className={`admin-menu-item ${activeTab === 'messages' ? 'active' : ''}`}
             onClick={() => setActiveTab('messages')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'messages' ? '#f1f5f9' : 'transparent',
+              color: activeTab === 'messages' ? '#0f172a' : '#64748b',
+              fontWeight: activeTab === 'messages' ? 700 : 500
+            }}
+            title={isEn ? "Messages" : "Messages Clients"}
           >
             <Mail size={18} />
-            <span>{t('dashMessages', lang)}</span>
-            {messages.filter(m => m.status === 'unread').length > 0 && (
-              <span style={{ backgroundColor: 'var(--primary)', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', marginLeft: 'auto' }}>
+            {!isSidebarCollapsed && <span>{isEn ? "Messages" : "Messages"}</span>}
+            {!isSidebarCollapsed && messages.filter(m => m.status === 'unread').length > 0 && (
+              <span className="menu-badge" style={{ backgroundColor: '#2563eb', color: 'white', borderRadius: '10px', padding: '1px 7px', fontSize: '0.72rem', marginLeft: 'auto', fontWeight: 700 }}>
                 {messages.filter(m => m.status === 'unread').length}
               </span>
             )}
           </button>
+
+          {/* 11. Paramètres */}
           <button 
             className={`admin-menu-item ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveTab('settings')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'settings' ? '#f1f5f9' : 'transparent',
+              color: activeTab === 'settings' ? '#0f172a' : '#64748b',
+              fontWeight: activeTab === 'settings' ? 700 : 500
+            }}
+            title={isEn ? "Settings" : "Paramètres"}
           >
             <Settings size={18} />
-            <span>{t('dashSettings', lang)}</span>
+            {!isSidebarCollapsed && <span>{isEn ? "Settings" : "Paramètres"}</span>}
           </button>
+
+          {/* 12. Centre d'aide */}
+          <button 
+            className={`admin-menu-item ${activeTab === 'help' ? 'active' : ''}`}
+            onClick={() => setActiveTab('help')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'help' ? '#f1f5f9' : 'transparent',
+              color: activeTab === 'help' ? '#0f172a' : '#64748b',
+              fontWeight: activeTab === 'help' ? 700 : 500
+            }}
+            title={isEn ? "Help Center" : "Centre d'aide"}
+          >
+            <Headphones size={18} />
+            {!isSidebarCollapsed && <span>{isEn ? "Help Center" : "Centre d'aide"}</span>}
+          </button>
+
         </nav>
-        <div className="admin-footer">
+
+        {/* Sidebar Bottom Controls */}
+        <div className="admin-footer" style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '12px', borderTop: '1px solid #f1f5f9' }}>
+          {/* Collapse Toggle */}
+          <button
+            type="button"
+            className="admin-menu-item"
+            style={{
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              width: '100%',
+              padding: isSidebarCollapsed ? '10px 0' : '10px 12px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderRadius: '8px',
+              color: '#64748b',
+              fontSize: '0.85rem'
+            }}
+            onClick={() => setIsSidebarCollapsed(prev => !prev)}
+            title={isSidebarCollapsed ? (isEn ? "Expand menu" : "Agrandir le menu") : (isEn ? "Collapse menu" : "Réduire le menu")}
+          >
+            {isSidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+            {!isSidebarCollapsed && <span>{isEn ? "Collapse menu" : "Réduire le menu"}</span>}
+          </button>
+
+          {/* Sign Out */}
           <button 
             className="admin-menu-item" 
-            style={{ color: 'var(--danger)', width: '100%', border: 'none', background: 'none', cursor: 'pointer' }}
+            style={{
+              color: '#ef4444',
+              width: '100%',
+              border: 'none',
+              background: 'none',
+              cursor: 'pointer',
+              padding: isSidebarCollapsed ? '10px 0' : '10px 12px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderRadius: '8px',
+              fontSize: '0.85rem'
+            }}
             onClick={logoutAdmin}
+            title={isEn ? "Sign out" : "Déconnexion"}
           >
             <LogOut size={18} />
-            <span>{t('dashSignOut', lang)}</span>
+            {!isSidebarCollapsed && <span>{t('dashSignOut', lang)}</span>}
           </button>
         </div>
       </aside>
 
       {/* Main Workspace */}
-      <main className="admin-main" style={{ overflow: 'hidden' }}>
-        <header className="admin-header" style={{ flexShrink: 0 }}>
-          <div className="admin-header-title">
-            <h2>{t('dashAdmin', lang)}</h2>
+      <main className="admin-main" style={{ overflow: 'hidden', background: '#f8fafc' }}>
+        <header className="admin-header" style={{
+          flexShrink: 0,
+          background: '#ffffff',
+          borderBottom: '1px solid #e5e7eb',
+          padding: '14px 32px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
+              {activeTab === 'overview' && (isEn ? "Dashboard Home" : "Accueil")}
+              {activeTab === 'orders' && (isEn ? "Sales & Quotes" : "Ventes & Commandes")}
+              {activeTab === 'inventory' && (isEn ? "Machinery Catalog" : "Catalogue des Machines")}
+              {activeTab === 'clients' && (isEn ? "Customers Directory" : "Répertoire des Clients")}
+              {activeTab === 'revenue' && (isEn ? "Revenue & Cashflow" : "Revenus & Trésorerie")}
+              {activeTab === 'analytics' && (isEn ? "Analytics & Reports" : "Analytiques & Performance")}
+              {activeTab === 'marketing' && (isEn ? "Marketing & Promotions" : "Marketing & Promotions")}
+              {activeTab === 'landing_page' && (isEn ? "Landing Page Customizer" : "Personnalisation de la Vitrine")}
+              {activeTab === 'ebooks' && (isEn ? "Digital Offers & E-books" : "Offres Numériques & E-books")}
+              {activeTab === 'messages' && (isEn ? "Client Inquiries" : "Messages Clients")}
+              {activeTab === 'settings' && (isEn ? "Store Settings" : "Paramètres Généraux")}
+              {activeTab === 'help' && (isEn ? "Help Center & Documentation" : "Centre d'Aide")}
+            </h2>
+
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '3px 10px',
+              borderRadius: '20px',
+              background: '#dcfce7',
+              color: '#166534',
+              fontSize: '0.72rem',
+              fontWeight: 700
+            }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
+              <span>{isEn ? "Store Online" : "Boutique en ligne"}</span>
+            </div>
           </div>
-          <div className="admin-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              type="button"
+              onClick={goHome}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                background: '#ffffff',
+                color: '#334155',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              <ExternalLink size={14} />
+              <span>{isEn ? "View Live Store" : "Voir ma boutique"}</span>
+            </button>
+
             {/* Theme & Language Toggles for Admin */}
             <div className="nav-controls" style={{ display: 'flex', gap: '8px' }}>
               <button 
                 onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} 
                 className="theme-toggle"
                 style={{ cursor: 'pointer' }}
+                title={theme === 'light' ? "Mode sombre" : "Mode clair"}
               >
                 {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
               </button>
@@ -383,154 +842,914 @@ export default function AdminDashboard({
                 onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')} 
                 className="lang-toggle"
                 style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}
+                title="Language / Langue"
               >
                 <Globe size={14} style={{ marginRight: '2px' }} />
                 {lang === 'fr' ? 'EN' : 'FR'}
               </button>
             </div>
-
-
           </div>
         </header>
 
         <div className="admin-content">
-          {/* TAB 1: OVERVIEW / ANALYTICS */}
+          {/* TAB 1: OVERVIEW / ACCUEIL (CHARIOW STYLE) */}
           {activeTab === 'overview' && (
             <div style={{ animation: 'fadeIn 0.3s ease', overflowY: 'auto', height: '100%', paddingRight: '12px' }}>
-              <div className="admin-stats-grid">
-                <div className="stat-card">
-                  <div className="stat-info">
-                    <h4>{isEn ? "Revenue" : "Chiffre d'Affaires"}</h4>
-                    <div className="stat-number">{(totalRevenue).toLocaleString()} FCFA</div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--success)' }}>{isEn ? "Shipped & Delivered" : "Livré & Expédié"}</span>
+              
+              {/* Top Stats Cards Row */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '20px',
+                marginBottom: '32px'
+              }}>
+                {/* 1. Revenu total */}
+                <div className="chariow-stat-card">
+                  <div className="chariow-stat-value">
+                    {totalRevenue.toLocaleString()} FCFA
                   </div>
-                  <div className="stat-icon" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}>
-                    <Check size={22} />
-                  </div>
-                </div>
-
-                <div className="stat-card">
-                  <div className="stat-info">
-                    <h4>{isEn ? "Pending Validation" : "En attente / Fabrication"}</h4>
-                    <div className="stat-number">{(pendingRevenue).toLocaleString()} FCFA</div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--warning)' }}>{isEn ? "Awaiting Payment" : "En attente de validation"}</span>
-                  </div>
-                  <div className="stat-icon" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}>
-                    <RefreshCw size={22} />
-                  </div>
-                </div>
-
-                <div className="stat-card">
-                  <div className="stat-info">
-                    <h4>{isEn ? "Total Orders" : "Commandes Totales"}</h4>
-                    <div className="stat-number">{orders.length}</div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{isEn ? "Quotes received" : "Devis reçus"}</span>
-                  </div>
-                  <div className="stat-icon" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}>
-                    <FileText size={22} />
-                  </div>
-                </div>
-
-                <div className="stat-card">
-                  <div className="stat-info">
-                    <h4>{isEn ? "Messages Received" : "Messages Reçus"}</h4>
-                    <div className="stat-number">{messages.length}</div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--info)' }}>
-                      {messages.filter(m => m.status === 'unread').length} {isEn ? "unread" : "non lus"}
+                  <div className="chariow-stat-label">
+                    <span>{isEn ? "Total revenue" : "Revenu total"}</span>
+                    <span 
+                      title={isEn ? "Total revenue from delivered and shipped orders" : "Chiffre d'affaires cumulé des commandes livrées et expédiées"}
+                      style={{ cursor: 'help', color: '#94a3b8', display: 'flex', alignItems: 'center' }}
+                    >
+                      <Info size={14} />
                     </span>
                   </div>
-                  <div className="stat-icon" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}>
-                    <Mail size={22} />
+                </div>
+
+                {/* 2. 7 derniers jours */}
+                <div className="chariow-stat-card">
+                  <div className="chariow-stat-value">
+                    {sevenDaysRevenue.toLocaleString()} FCFA
+                  </div>
+                  <div className="chariow-stat-label">
+                    <span>{isEn ? "Last 7 days" : "7 derniers jours"}</span>
+                    <span 
+                      title={isEn ? "Total sales completed over the last 7 rolling days" : "Ventes réalisées au cours des 7 derniers jours glissants"}
+                      style={{ cursor: 'help', color: '#94a3b8', display: 'flex', alignItems: 'center' }}
+                    >
+                      <Info size={14} />
+                    </span>
                   </div>
                 </div>
 
-                <div className="stat-card" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('ebooks')}>
-                  <div className="stat-info">
-                    <h4>{isEn ? "E-books & Packs" : "E-books & Packs"}</h4>
-                    <div className="stat-number">{ebooks.length}</div>
-                    <span style={{ fontSize: '0.75rem', color: '#d97706' }}>
-                      {ebooks.filter(e => e.isPack).length} packs · {ebooks.filter(e => e.promoPriceFcfa).length} en promo
+                {/* 3. Nombre total de clients */}
+                <div className="chariow-stat-card" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('clients')}>
+                  <div className="chariow-stat-value">
+                    {totalClientsCount}
+                  </div>
+                  <div className="chariow-stat-label">
+                    <span>{isEn ? "Total customers" : "Nombre total de clients"}</span>
+                    <span 
+                      title={isEn ? "Total unique clients from orders and inquiries" : "Clients uniques ayant commandé ou contacté l'atelier"}
+                      style={{ cursor: 'help', color: '#94a3b8', display: 'flex', alignItems: 'center' }}
+                    >
+                      <Info size={14} />
                     </span>
                   </div>
-                  <div className="stat-icon" style={{ backgroundColor: 'rgba(217, 119, 6, 0.12)', color: '#d97706' }}>
-                    <BookOpen size={22} />
+                </div>
+
+                {/* 4. Total des commandes */}
+                <div className="chariow-stat-card" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('orders')}>
+                  <div className="chariow-stat-value">
+                    {orders.length}
+                  </div>
+                  <div className="chariow-stat-label">
+                    <span>{isEn ? "Total quotes & orders" : "Total des commandes"}</span>
+                    <span 
+                      title={isEn ? "All quotes and orders recorded in the system" : "Total des devis et commandes enregistrés"}
+                      style={{ cursor: 'help', color: '#94a3b8', display: 'flex', alignItems: 'center' }}
+                    >
+                      <Info size={14} />
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Analytics Custom SVG Charts Grid */}
-              <div className="admin-charts-grid">
-                <div className="chart-card">
-                  <div className="chart-card-header">
-                    <h3 style={{ fontSize: '1.1rem' }}>{isEn ? "Revenue Share by Country (FCFA)" : "Répartition des ventes par pays (FCFA)"}</h3>
+              {/* Section: Produits les plus vendus */}
+              <div style={{ marginBottom: '36px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+                      {isEn ? "Best-selling products" : "Produits les plus vendus"}
+                    </h3>
+                    <p style={{ fontSize: '0.88rem', color: '#64748b', margin: 0 }}>
+                      {isEn ? "Your best-selling products based on total sales volume" : "Vos produits les plus vendus basés sur le total des ventes"}
+                    </p>
                   </div>
-                  
-                  {/* SVG Bar Chart representing revenue share per country */}
-                  <div className="chart-wrapper">
-                    {Object.entries(getVentesParPays()).map(([country, amt]) => {
-                      const maxAmount = Math.max(...Object.values(getVentesParPays()), 1000000);
-                      const barHeight = amt > 0 ? (amt / maxAmount) * 200 : 5;
-                      return (
-                        <div key={country} className="chart-bar-container">
-                          <div className="chart-bar" style={{ height: `${barHeight}px` }}>
-                            {amt > 0 && <span className="chart-bar-value">{(amt / 1000).toFixed(0)}k</span>}
-                          </div>
-                          <span className="chart-bar-label">{country}</span>
-                        </div>
-                      );
-                    })}
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('inventory')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      background: '#ffffff',
+                      color: '#0f172a',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {isEn ? "View all" : "Voir tout"}
+                  </button>
+                </div>
+
+                {topSellingProducts.length === 0 ? (
+                  <div style={{
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    border: '1px solid #e5e7eb',
+                    padding: '48px 24px',
+                    textAlign: 'center',
+                    color: '#64748b',
+                    fontSize: '0.95rem',
+                    fontWeight: 500
+                  }}>
+                    {isEn ? "No data available" : "Aucune donnée disponible"}
+                  </div>
+                ) : (
+                  <div style={{
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    border: '1px solid #e5e7eb',
+                    overflow: 'hidden',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                  }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '0.78rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          <th style={{ padding: '14px 20px' }}>Produit</th>
+                          <th style={{ padding: '14px 20px' }}>Catégorie</th>
+                          <th style={{ padding: '14px 20px', textAlign: 'center' }}>Unités Vendues</th>
+                          <th style={{ padding: '14px 20px', textAlign: 'right' }}>Total Ventes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topSellingProducts.slice(0, 5).map((prod, idx) => (
+                          <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem' }}>
+                            <td style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <span style={{
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '6px',
+                                background: idx === 0 ? '#fef3c7' : '#f1f5f9',
+                                color: idx === 0 ? '#b45309' : '#64748b',
+                                fontSize: '0.75rem',
+                                fontWeight: 800,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0
+                              }}>
+                                #{idx + 1}
+                              </span>
+                              <img src={prod.image} alt={prod.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                              <span style={{ fontWeight: 700, color: '#0f172a' }}>{prod.name}</span>
+                            </td>
+                            <td style={{ padding: '14px 20px', color: '#475569', fontSize: '0.85rem' }}>{prod.category}</td>
+                            <td style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700 }}>{prod.unitsSold}</td>
+                            <td style={{ padding: '14px 20px', textAlign: 'right', fontWeight: 800, color: '#166534' }}>{prod.totalRevenue.toLocaleString()} FCFA</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Section: Dernières Commandes & Devis Récents */}
+              <div style={{ marginBottom: '36px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+                      {isEn ? "Recent Quotes & Orders" : "Dernières Commandes & Devis Récents"}
+                    </h3>
+                    <p style={{ fontSize: '0.88rem', color: '#64748b', margin: 0 }}>
+                      {isEn ? "Latest machinery quotes received from buyers" : "Dernières demandes de devis et commandes enregistrées"}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('orders')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      background: '#ffffff',
+                      color: '#0f172a',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {isEn ? "Manage all orders" : "Gérer toutes les commandes"}
+                  </button>
+                </div>
+
+                {orders.length === 0 ? (
+                  <div style={{
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    border: '1px solid #e5e7eb',
+                    padding: '48px 24px',
+                    textAlign: 'center',
+                    color: '#64748b',
+                    fontSize: '0.95rem'
+                  }}>
+                    {isEn ? "No order recorded yet." : "Aucune commande enregistrée pour le moment."}
+                  </div>
+                ) : (
+                  <div style={{
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    border: '1px solid #e5e7eb',
+                    overflow: 'hidden',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                  }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '0.78rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          <th style={{ padding: '14px 20px' }}>Réf & Date</th>
+                          <th style={{ padding: '14px 20px' }}>Client</th>
+                          <th style={{ padding: '14px 20px' }}>Pays</th>
+                          <th style={{ padding: '14px 20px', textAlign: 'right' }}>Montant Total</th>
+                          <th style={{ padding: '14px 20px', textAlign: 'center' }}>Statut</th>
+                          <th style={{ padding: '14px 20px', textAlign: 'center' }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {orders.slice(0, 5).map((order) => {
+                          const statusConfig = {
+                            pending: { label: isEn ? 'Pending' : 'En attente', bg: '#fef3c7', text: '#b45309' },
+                            manufacturing: { label: isEn ? 'Manufacturing' : 'Fabrication', bg: '#eff6ff', text: '#1d4ed8' },
+                            shipped: { label: isEn ? 'Shipped' : 'Expédié', bg: '#f3e8ff', text: '#7e22ce' },
+                            delivered: { label: isEn ? 'Delivered' : 'Livré', bg: '#dcfce7', text: '#166534' }
+                          }[order.status] || { label: order.status, bg: '#f1f5f9', text: '#475569' };
+
+                          return (
+                            <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.88rem' }}>
+                              <td style={{ padding: '14px 20px' }}>
+                                <div style={{ fontWeight: 700, color: '#0f172a' }}>{order.id}</div>
+                                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{order.date}</div>
+                              </td>
+                              <td style={{ padding: '14px 20px' }}>
+                                <div style={{ fontWeight: 600, color: '#0f172a' }}>{order.clientName}</div>
+                                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{order.phone}</div>
+                              </td>
+                              <td style={{ padding: '14px 20px', color: '#475569' }}>
+                                {order.country}
+                              </td>
+                              <td style={{ padding: '14px 20px', textAlign: 'right', fontWeight: 800, color: '#166534' }}>
+                                {order.totalFcfa.toLocaleString()} FCFA
+                              </td>
+                              <td style={{ padding: '14px 20px', textAlign: 'center' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '4px 10px',
+                                  borderRadius: '20px',
+                                  background: statusConfig.bg,
+                                  color: statusConfig.text,
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700
+                                }}>
+                                  {statusConfig.label}
+                                </span>
+                              </td>
+                              <td style={{ padding: '14px 20px', textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setViewingOrder(order)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #cbd5e1',
+                                    background: '#ffffff',
+                                    color: '#0f172a',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {isEn ? "View details" : "Détails"}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Section: Actions Rapides Administrateur */}
+              <div style={{ marginBottom: '40px' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+                    {isEn ? "Administrator Quick Shortcuts" : "Raccourcis de Gestion Rapide"}
+                  </h3>
+                  <p style={{ fontSize: '0.88rem', color: '#64748b', margin: 0 }}>
+                    {isEn ? "Direct access to key workshop operations" : "Accédez rapidement aux opérations clés de votre atelier"}
+                  </p>
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: '16px'
+                }}>
+                  {/* Shortcut 1: Nouvelle machine */}
+                  <div
+                    onClick={() => {
+                      setEditingProduct(null);
+                      setShowProductEditor(true);
+                    }}
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '16px',
+                      border: '1px solid #e5e7eb',
+                      padding: '20px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#f0fdf4', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                      <Plus size={20} />
+                    </div>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+                      {isEn ? "+ Add a Machine" : "+ Ajouter une Machine"}
+                    </h4>
+                    <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>
+                      {isEn ? "Add an equipment to the public catalog" : "Publier un nouvel équipement sur votre catalogue"}
+                    </p>
+                  </div>
+
+                  {/* Shortcut 2: Landing Page */}
+                  <div
+                    onClick={() => setActiveTab('landing_page')}
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '16px',
+                      border: '1px solid #e5e7eb',
+                      padding: '20px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#eff6ff', color: '#1d4ed8', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                      <LayoutTemplate size={20} />
+                    </div>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+                      {isEn ? "Customize Landing Page" : "Personnaliser la Vitrine"}
+                    </h4>
+                    <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>
+                      {isEn ? "Edit texts, key metrics, and visible sections" : "Modifier les textes, chiffres clés et sections"}
+                    </p>
+                  </div>
+
+                  {/* Shortcut 3: Messages & Inquiries */}
+                  <div
+                    onClick={() => setActiveTab('messages')}
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '16px',
+                      border: '1px solid #e5e7eb',
+                      padding: '20px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#fff7ed', color: '#c2410c', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                      <Mail size={20} />
+                    </div>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+                      {isEn ? "Client Inquiries & Support" : "Demandes Clients & SAV"}
+                    </h4>
+                    <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>
+                      {messages.filter(m => m.status === 'unread').length} {isEn ? "unread messages to respond to" : "messages non lus en attente de réponse"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB: LANDING PAGE CUSTOMIZER (KEY FEATURE REQUESTED) */}
+          {activeTab === 'landing_page' && (
+            <div style={{ animation: 'fadeIn 0.3s ease', overflowY: 'auto', height: '100%', paddingRight: '12px' }}>
+              <LandingPageEditor
+                settings={settings}
+                updateSettings={updateSettings}
+                lang={lang}
+                showAlert={showAlert}
+                showConfirm={showConfirm}
+                goHome={goHome}
+              />
+            </div>
+          )}
+
+          {/* TAB: CLIENTS DIRECTORY */}
+          {activeTab === 'clients' && (() => {
+            const filteredClients = clientsList.filter(c => {
+              const matchesSearch = clientSearch === '' || 
+                c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                c.email.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                c.phone.includes(clientSearch) ||
+                (c.company && c.company.toLowerCase().includes(clientSearch.toLowerCase()));
+              const matchesCountry = clientCountryFilter === 'all' || c.country === clientCountryFilter;
+              return matchesSearch && matchesCountry;
+            });
+
+            return (
+              <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '16px', flexWrap: 'wrap', flexShrink: 0 }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+                      {isEn ? "Customer & Inquirer Directory" : "Répertoire des Clients & Prospects"}
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                      {filteredClients.length} {isEn ? "registered contacts" : "contacts enregistrés"}
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      value={clientSearch}
+                      onChange={(e) => setClientSearch(e.target.value)}
+                      placeholder={isEn ? "Search by name, email, phone..." : "Rechercher par nom, email, téléphone..."}
+                      style={{
+                        padding: '9px 14px',
+                        borderRadius: '10px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '0.88rem',
+                        width: '260px',
+                        background: '#ffffff'
+                      }}
+                    />
+
+                    <select
+                      value={clientCountryFilter}
+                      onChange={(e) => setClientCountryFilter(e.target.value)}
+                      style={{
+                        padding: '9px 14px',
+                        borderRadius: '10px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '0.88rem',
+                        background: '#ffffff'
+                      }}
+                    >
+                      <option value="all">{isEn ? "All Countries" : "Tous les Pays"}</option>
+                      <option value="Bénin">Bénin</option>
+                      <option value="Togo">Togo</option>
+                      <option value="Burkina Faso">Burkina Faso</option>
+                      <option value="Niger">Niger</option>
+                      <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+                    </select>
                   </div>
                 </div>
 
-                <div className="chart-card">
-                  <div className="chart-card-header">
-                    <h3 style={{ fontSize: '1.1rem' }}>{isEn ? "Sales by Machine Category" : "Ventes par Catégorie de Machine"}</h3>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px' }}>
-                    {Object.entries(getVentesParCategorie()).map(([category, val]) => {
-                      const totalCat = Object.values(getVentesParCategorie()).reduce((a, b) => a + b, 0) || 1;
-                      const percentage = Math.round((val / totalCat) * 100);
-                      return (
-                        <div key={category} style={{ fontSize: '0.9rem' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', cursor: 'pointer', alignItems: 'center' }} onClick={() => setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }))}>
-                            <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
-                              <ChevronRight size={14} style={{ marginRight: '4px', transform: expandedCategories[category] ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
-                              {getCategoryLabel(category)}
-                            </span>
-                            <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{percentage}%</span>
-                          </div>
-                          <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--bg-surface)', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: `${percentage}%`, height: '100%', backgroundColor: 'var(--primary)', borderRadius: '4px' }}></div>
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'right', marginTop: '2px' }}>
-                            {val.toLocaleString()} FCFA
-                          </div>
+                <div style={{ flexGrow: 1, overflowY: 'auto', background: '#ffffff', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                  {filteredClients.length === 0 ? (
+                    <div style={{ padding: '60px 24px', textAlign: 'center', color: '#64748b' }}>
+                      {isEn ? "No client matches your search." : "Aucun client ne correspond à votre recherche."}
+                    </div>
+                  ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '0.78rem', color: '#64748b', textTransform: 'uppercase' }}>
+                          <th style={{ padding: '14px 20px' }}>Client</th>
+                          <th style={{ padding: '14px 20px' }}>Contact</th>
+                          <th style={{ padding: '14px 20px' }}>Pays / Entreprise</th>
+                          <th style={{ padding: '14px 20px', textAlign: 'center' }}>Commandes</th>
+                          <th style={{ padding: '14px 20px', textAlign: 'right' }}>Total Acheté</th>
+                          <th style={{ padding: '14px 20px', textAlign: 'center' }}>Actions Rapides</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredClients.map((client, idx) => (
+                          <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.88rem' }}>
+                            <td style={{ padding: '14px 20px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{
+                                  width: '36px',
+                                  height: '36px',
+                                  borderRadius: '50%',
+                                  background: '#f1f5f9',
+                                  color: '#0f172a',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: 800,
+                                  fontSize: '0.85rem'
+                                }}>
+                                  {client.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <div style={{ fontWeight: 700, color: '#0f172a' }}>{client.name}</div>
+                                  {client.company && <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{client.company}</div>}
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: '14px 20px', color: '#334155' }}>
+                              <div>{client.phone}</div>
+                              <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{client.email}</div>
+                            </td>
+                            <td style={{ padding: '14px 20px' }}>
+                              <span style={{
+                                display: 'inline-block',
+                                padding: '3px 10px',
+                                borderRadius: '12px',
+                                background: '#f1f5f9',
+                                color: '#334155',
+                                fontSize: '0.78rem',
+                                fontWeight: 600
+                              }}>
+                                {client.country}
+                              </span>
+                            </td>
+                            <td style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700 }}>
+                              {client.ordersCount}
+                            </td>
+                            <td style={{ padding: '14px 20px', textAlign: 'right', fontWeight: 800, color: '#166534' }}>
+                              {client.totalSpent.toLocaleString()} FCFA
+                            </td>
+                            <td style={{ padding: '14px 20px', textAlign: 'center' }}>
+                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                {client.phone && (
+                                  <button
+                                    type="button"
+                                    onClick={() => window.open(`https://wa.me/${client.phone.replace(/[^0-9]/g, '')}`, '_blank')}
+                                    style={{
+                                      padding: '6px 10px',
+                                      borderRadius: '8px',
+                                      border: 'none',
+                                      background: '#dcfce7',
+                                      color: '#166534',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                    title="WhatsApp"
+                                  >
+                                    <MessageCircle size={13} />
+                                    <span>WhatsApp</span>
+                                  </button>
+                                )}
+                                {client.phone && (
+                                  <button
+                                    type="button"
+                                    onClick={() => window.location.href = `tel:${client.phone}`}
+                                    style={{
+                                      padding: '6px 10px',
+                                      borderRadius: '8px',
+                                      border: '1px solid #cbd5e1',
+                                      background: '#ffffff',
+                                      color: '#334155',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 600,
+                                      cursor: 'pointer'
+                                    }}
+                                    title="Appeler"
+                                  >
+                                    <Phone size={13} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
-                          {expandedCategories[category] && (
-                            <div style={{ marginTop: '12px', paddingLeft: '16px', borderLeft: '2px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              {Object.entries(getVentesParSousCategorie(category)).map(([sub, subVal]) => {
-                                const subPercentage = val > 0 ? Math.round((subVal / val) * 100) : 0;
-                                return (
-                                  <div key={sub}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                      <span style={{ fontSize: '0.8rem' }}>{sub}</span>
-                                      <span style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.8rem' }}>{subPercentage}%</span>
-                                    </div>
-                                    <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--bg-surface)', borderRadius: '2px', overflow: 'hidden' }}>
-                                      <div style={{ width: `${subPercentage}%`, height: '100%', backgroundColor: 'var(--secondary)', borderRadius: '2px' }}></div>
-                                    </div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'right', marginTop: '2px' }}>
-                                      {subVal.toLocaleString()} FCFA
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+          {/* TAB: REVENUS & TRÉSORERIE */}
+          {activeTab === 'revenue' && (
+            <div style={{ animation: 'fadeIn 0.3s ease', overflowY: 'auto', height: '100%', paddingRight: '12px' }}>
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+                  {isEn ? "Financial Overview & Cashflow" : "Synthèse Financière & Trésorerie"}
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                  {isEn ? "Monitor your realized revenue, pending quotes, and country distributions." : "Suivez votre chiffre d'affaires encaissé, les devis en cours et la répartition géographique."}
+                </p>
+              </div>
+
+              {/* 3 Financial Summary Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+                <div className="chariow-stat-card">
+                  <div className="chariow-stat-value" style={{ color: '#166534' }}>
+                    {totalRevenue.toLocaleString()} FCFA
                   </div>
+                  <div className="chariow-stat-label">
+                    <span>{isEn ? "Realized Revenue (Delivered/Shipped)" : "Chiffre d'Affaires Encaissé"}</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: '8px', fontWeight: 600 }}>
+                    {orders.filter(o => o.status === 'delivered' || o.status === 'shipped').length} {isEn ? "completed orders" : "commandes honorées"}
+                  </div>
+                </div>
+
+                <div className="chariow-stat-card">
+                  <div className="chariow-stat-value" style={{ color: '#ea580c' }}>
+                    {pendingRevenue.toLocaleString()} FCFA
+                  </div>
+                  <div className="chariow-stat-label">
+                    <span>{isEn ? "Pending Pipeline (Quotes/Manufacturing)" : "Trésorerie en Attente / Fabrication"}</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#ea580c', marginTop: '8px', fontWeight: 600 }}>
+                    {orders.filter(o => o.status === 'pending' || o.status === 'manufacturing').length} {isEn ? "quotes in progress" : "devis en cours"}
+                  </div>
+                </div>
+
+                <div className="chariow-stat-card">
+                  <div className="chariow-stat-value">
+                    {orders.length > 0 ? Math.round((totalRevenue + pendingRevenue) / orders.length).toLocaleString() : 0} FCFA
+                  </div>
+                  <div className="chariow-stat-label">
+                    <span>{isEn ? "Average Order Value (Basket)" : "Panier Moyen par Devis"}</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '8px' }}>
+                    {orders.length} {isEn ? "orders considered" : "commandes analysées"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Country Breakdown Chart */}
+              <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e5e7eb', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', marginBottom: '20px' }}>
+                  {isEn ? "Revenue Share by Country (FCFA)" : "Répartition du Chiffre d'Affaires par Pays (FCFA)"}
+                </h4>
+                <div className="chart-wrapper">
+                  {Object.entries(getVentesParPays()).map(([country, amt]) => {
+                    const maxAmount = Math.max(...Object.values(getVentesParPays()), 1000000);
+                    const barHeight = amt > 0 ? (amt / maxAmount) * 200 : 5;
+                    return (
+                      <div key={country} className="chart-bar-container">
+                        <div className="chart-bar" style={{ height: `${barHeight}px`, background: '#166534' }}>
+                          {amt > 0 && <span className="chart-bar-value">{(amt / 1000).toFixed(0)}k</span>}
+                        </div>
+                        <span className="chart-bar-label">{country}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: ANALYTIQUES */}
+          {activeTab === 'analytics' && (
+            <div style={{ animation: 'fadeIn 0.3s ease', overflowY: 'auto', height: '100%', paddingRight: '12px' }}>
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+                  {isEn ? "Analytics & Machine Performance" : "Analytiques & Performance des Machines"}
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                  {isEn ? "Breakdown of equipment sales by category and subcategory." : "Analyse fine des ventes par catégorie et sous-catégorie d'équipement."}
+                </p>
+              </div>
+
+              <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e5e7eb', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', marginBottom: '20px' }}>
+                  {isEn ? "Sales by Equipment Category" : "Ventes par Catégorie d'Équipement"}
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {Object.entries(getVentesParCategorie()).map(([category, val]) => {
+                    const totalCat = Object.values(getVentesParCategorie()).reduce((a, b) => a + b, 0) || 1;
+                    const percentage = Math.round((val / totalCat) * 100);
+                    return (
+                      <div key={category} style={{ fontSize: '0.9rem' }}>
+                        <div 
+                          style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', cursor: 'pointer', alignItems: 'center' }} 
+                          onClick={() => setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }))}
+                        >
+                          <span style={{ fontWeight: 700, display: 'flex', alignItems: 'center', color: '#0f172a' }}>
+                            <ChevronRight size={15} style={{ marginRight: '6px', transform: expandedCategories[category] ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
+                            {getCategoryLabel(category)}
+                          </span>
+                          <span style={{ color: '#166534', fontWeight: 800 }}>{percentage}%</span>
+                        </div>
+                        <div style={{ width: '100%', height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ width: `${percentage}%`, height: '100%', backgroundColor: '#166534', borderRadius: '4px' }}></div>
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748b', textAlign: 'right', marginTop: '4px' }}>
+                          {val.toLocaleString()} FCFA
+                        </div>
+
+                        {expandedCategories[category] && (
+                          <div style={{ marginTop: '14px', paddingLeft: '18px', borderLeft: '2px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {Object.entries(getVentesParSousCategorie(category)).map(([sub, subVal]) => {
+                              const subPercentage = val > 0 ? Math.round((subVal / val) * 100) : 0;
+                              return (
+                                <div key={sub}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                    <span style={{ fontSize: '0.82rem', color: '#475569' }}>{sub}</span>
+                                    <span style={{ color: '#0f172a', fontWeight: 700, fontSize: '0.82rem' }}>{subPercentage}%</span>
+                                  </div>
+                                  <div style={{ width: '100%', height: '5px', backgroundColor: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                                    <div style={{ width: `${subPercentage}%`, height: '100%', backgroundColor: '#0284c7', borderRadius: '3px' }}></div>
+                                  </div>
+                                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', textAlign: 'right', marginTop: '2px' }}>
+                                    {subVal.toLocaleString()} FCFA
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: MARKETING */}
+          {activeTab === 'marketing' && (
+            <div style={{ animation: 'fadeIn 0.3s ease', overflowY: 'auto', height: '100%', paddingRight: '12px' }}>
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+                  {isEn ? "Marketing & Commercial Campaigns" : "Marketing & Campagnes Commerciales"}
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                  {isEn ? "Configure marketing banners, promotional e-book offers, and announcements." : "Gérez vos bandeaux promotionnels, vos packs d'e-books et vos annonces commerciales."}
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+                {/* Banner Promo Card */}
+                <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e5e7eb', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#dcfce7', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Megaphone size={18} />
+                    </div>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                      {isEn ? "Announcement Banner" : "Bandeau d'Annonce Supérieur"}
+                    </h4>
+                  </div>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '16px' }}>
+                    {settings?.heroAnnouncement || "Aucune annonce définie actuellement."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('landing_page')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: '#166534',
+                      color: 'white',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isEn ? "Edit Announcement on Landing Page" : "Modifier sur la Landing Page"}
+                  </button>
+                </div>
+
+                {/* Ebooks Packs Card */}
+                <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e5e7eb', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(217, 119, 6, 0.15)', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <BookOpen size={18} />
+                    </div>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                      {isEn ? "Digital Offers & Packs" : "Offres Numériques & E-books"}
+                    </h4>
+                  </div>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '16px' }}>
+                    {ebooks.length} {isEn ? "e-books and guides available for instant download." : "guides et e-books disponibles au téléchargement direct."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('ebooks')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: '#d97706',
+                      color: 'white',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isEn ? "Manage E-books" : "Gérer les E-books & Formations"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: CENTRE D'AIDE */}
+          {activeTab === 'help' && (
+            <div style={{ animation: 'fadeIn 0.3s ease', overflowY: 'auto', height: '100%', paddingRight: '12px', maxWidth: '1000px', margin: '0 auto' }}>
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+                  {isEn ? "Help Center & Documentation" : "Centre d'Aide & Documentation"}
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                  {isEn ? "Everything you need to master your dashboard and manage your workshop." : "Retrouvez les guides essentiels pour administrer votre atelier et votre vitrine en toute simplicité."}
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+                <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e5e7eb', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
+                    💡 Comment modifier la landing page ?
+                  </h4>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5 }}>
+                    Rendez-vous dans l'onglet <strong>Landing Page</strong> depuis le menu de gauche. Vous pouvez modifier les titres, les boutons, les numéros de téléphone et activer/désactiver les blocs en 1 clic.
+                  </p>
+                </div>
+
+                <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e5e7eb', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
+                    📦 Comment ajouter une nouvelle machine ?
+                  </h4>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5 }}>
+                    Dans l'onglet <strong>Produits</strong>, cliquez sur le bouton <strong>+ Ajouter une machine</strong>. Remplissez le nom, la catégorie, le prix en FCFA, les spécifications techniques et l'image.
+                  </p>
+                </div>
+
+                <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e5e7eb', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
+                    💬 Comment contacter un client sur WhatsApp ?
+                  </h4>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5 }}>
+                    Dans l'onglet <strong>Clients</strong> ou <strong>Ventes</strong>, cliquez sur le bouton vert <strong>WhatsApp</strong> en regard du client pour lui envoyer un message direct pré-rempli.
+                  </p>
+                </div>
+              </div>
+
+              {/* Direct Support Card */}
+              <div style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)', borderRadius: '16px', border: '1px solid #bbf7d0', padding: '28px', textAlign: 'center' }}>
+                <h4 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#166534', marginBottom: '8px' }}>
+                  Besoin d'une assistance directe ?
+                </h4>
+                <p style={{ fontSize: '0.9rem', color: '#475569', maxWidth: '600px', margin: '0 auto 20px', lineHeight: 1.5 }}>
+                  Notre équipe technique et support est à votre disposition par WhatsApp ou par téléphone pour vous assister.
+                </p>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => window.open(`https://wa.me/${(settings?.whatsappNumber || '22997699178').replace(/[^0-9]/g, '')}`, '_blank')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 20px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: '#16a34a',
+                      color: 'white',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <MessageCircle size={18} />
+                    <span>Ouvrir WhatsApp Support</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => window.location.href = `tel:${settings?.contactPhone1 || '+22997699178'}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 20px',
+                      borderRadius: '10px',
+                      border: '1px solid #cbd5e1',
+                      background: 'white',
+                      color: '#0f172a',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Phone size={18} />
+                    <span>Appeler l'Atelier</span>
+                  </button>
                 </div>
               </div>
             </div>
