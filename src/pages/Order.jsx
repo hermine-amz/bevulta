@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus, Trash2, ShieldCheck, Landmark, CheckCircle, FileText } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, ShieldCheck, Landmark, CheckCircle, FileText, CreditCard } from 'lucide-react';
+import { initiatePayment } from '../services/paymentService';
+import PaymentModal from '../components/PaymentModal';
 import { t } from '../data/translations';
 
-export default function Order({ cart, updateQty, removeFromCart, clearCart, onSubmitOrder, lang, showAlert }) {
+export default function Order({ cart, updateQty, removeFromCart, clearCart, onSubmitOrder, lang, showAlert, settings = {} }) {
   const isEn = lang === 'en';
 
   const [formData, setFormData] = useState({
@@ -17,6 +19,27 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
 
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [createdOrder, setCreatedOrder] = useState(null);
+  const [paymentModalData, setPaymentModalData] = useState(null);
+
+  const handlePayOrder = () => {
+    if (!createdOrder) return;
+    initiatePayment({
+      amountFcfa: createdOrder.totalFcfa,
+      itemTitle: `Commande #${createdOrder.id}`,
+      orderId: createdOrder.id,
+      clientInfo: createdOrder,
+      settings,
+      onSuccess: () => {
+        showAlert(lang === "fr" ? "Paiement validé avec succès !" : "Payment processed successfully!");
+      },
+      onError: (err) => {
+        showAlert(err.message || (lang === "fr" ? "Erreur de paiement." : "Payment error."));
+      },
+      onManualMoMo: (data) => {
+        setPaymentModalData(data);
+      }
+    });
+  };
 
   const countries = lang === 'fr' ? [
     { value: 'benin', label: 'Bénin' },
@@ -169,6 +192,42 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
             </table>
           </div>
 
+          {/* Direct Mobile Money Payment CTA */}
+          <div style={{
+            background: "linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)",
+            border: "2px solid #bbf7d0",
+            borderRadius: "16px",
+            padding: "24px",
+            marginBottom: "32px",
+            textAlign: "center"
+          }}>
+            <h4 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#166534", margin: "0 0 8px 0" }}>
+              {isEn ? "Pay Online or by Mobile Money" : "Régler maintenant par Mobile Money / Carte"}
+            </h4>
+            <p style={{ fontSize: "0.88rem", color: "#475569", margin: "0 0 16px 0" }}>
+              {isEn ? "Fast, secure payment via MTN MoMo, Moov Money, Wave, or Bank Card." : "Paiement direct sécurisé via MTN MoMo, Moov Money, Wave ou Carte Bancaire."}
+            </p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handlePayOrder}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "12px 28px",
+                fontSize: "1rem",
+                fontWeight: 800,
+                background: "#16a34a",
+                border: "none",
+                cursor: "pointer"
+              }}
+            >
+              <CreditCard size={20} />
+              <span>{isEn ? "Pay Now" : "Payer Maintenant"} ({createdOrder.totalFcfa.toLocaleString()} FCFA)</span>
+            </button>
+          </div>
+
           {/* Payment & Next Steps */}
           <div style={{ textAlign: 'left', marginBottom: '32px' }}>
             <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--secondary)', marginBottom: '12px' }}>
@@ -201,6 +260,7 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
   }
 
   return (
+    <>
     <div className="order-page">
       {/* Main Cart Area */}
       <div className="order-main">
@@ -404,5 +464,18 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
         </form>
       </div>
     </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={paymentModalData !== null}
+        onClose={() => setPaymentModalData(null)}
+        paymentData={paymentModalData}
+        settings={settings}
+        lang={lang}
+        onConfirmPayment={() => {
+          showAlert(lang === "fr" ? "Paiement en cours de vérification. Merci !" : "Payment under verification. Thank you!");
+        }}
+      />
+    </>
   );
 }

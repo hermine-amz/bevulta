@@ -800,6 +800,17 @@ export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert }) {
         </div>
       </div>
 
+      {/* Mobile Money Payment Modal */}
+      <PaymentModal
+        isOpen={paymentModalData !== null}
+        onClose={() => setPaymentModalData(null)}
+        paymentData={paymentModalData}
+        settings={settings}
+        lang={lang}
+        onConfirmPayment={() => {
+          showAlert(lang === "fr" ? "Paiement en cours de vérification. Merci !" : "Payment under verification. Thank you!");
+        }}
+      />
     </div>
   );
 }

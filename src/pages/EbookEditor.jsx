@@ -56,6 +56,7 @@ export default function EbookEditor({ ebook, onSave, onCancel, allEbooks = [], l
     ebook?.coverImage || (isPack ? PRESET_COVERS[5].url : PRESET_COVERS[0].url)
   );
   const [downloadUrl, setDownloadUrl] = useState(ebook?.downloadUrl || '');
+  const [paymentLink, setPaymentLink] = useState(ebook?.paymentLink || '');
   
   // Visibility & Featured
   const [isVisible, setIsVisible] = useState(ebook?.isVisible !== false);
@@ -130,6 +131,7 @@ export default function EbookEditor({ ebook, onSave, onCancel, allEbooks = [], l
       promoPriceEur: hasPromo && promoPriceFcfa ? (Number(promoPriceEur) || Math.round(Number(promoPriceFcfa) / 655.957)) : null,
       coverImage: coverImage.trim() || PRESET_COVERS[0].url,
       downloadUrl: downloadUrl.trim(),
+      paymentLink: paymentLink.trim(),
       pages: pages.trim() || (isPack ? "Pack de livres" : "200 pages"),
       fileFormat: fileFormat.trim() || "PDF Haute Définition",
       language: language.trim() || "Français",
@@ -598,6 +600,20 @@ export default function EbookEditor({ ebook, onSave, onCancel, allEbooks = [], l
                 value={downloadUrl} 
                 onChange={(e) => setDownloadUrl(e.target.value)} 
               />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">{isEn ? "Direct Payment Link (Saspay / Wave / PayDunya - Optional)" : "Lien de paiement direct spécifique (Saspay / Wave / PayDunya - Optionnel)"}</label>
+              <input 
+                type="url" 
+                className="form-input" 
+                placeholder="https://saspay.me/... ou https://paydunya.com/p/..."
+                value={paymentLink} 
+                onChange={(e) => setPaymentLink(e.target.value)} 
+              />
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
+                {isEn ? "If filled, clicking 'Buy' will open this specific link instead of the store gateway." : "Si renseigné, le clic sur « Acheter » ouvrira directement ce lien spécifique plutôt que la passerelle globale."}
+              </span>
             </div>
           </div>
 

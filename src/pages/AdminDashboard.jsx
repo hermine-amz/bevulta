@@ -5,7 +5,7 @@ import {
   BookOpen, Layers, Copy,
   ShoppingBag, Users, CircleDollarSign, Megaphone, LayoutTemplate, Headphones,
   PanelLeftClose, PanelLeftOpen, ExternalLink, ChevronsUpDown,
-  Info, MessageCircle
+  Info, MessageCircle, CreditCard
 } from 'lucide-react';
 import { CATEGORIES, CATEGORY_KEYS } from '../data/categories';
 import { t } from '../data/translations';
@@ -13,6 +13,7 @@ import ProductEditor from './ProductEditor';
 import OrderEditor from './OrderEditor';
 import EbookEditor from './EbookEditor';
 import LandingPageEditor from '../components/LandingPageEditor';
+import PaymentSettingsEditor from '../components/PaymentSettingsEditor';
 
 export default function AdminDashboard({ 
   products, addProduct, updateProduct, deleteProduct,
@@ -628,6 +629,30 @@ export default function AdminDashboard({
             )}
           </button>
 
+          {/* 9. Passerelles de Paiement */}
+          <button 
+            className={`admin-menu-item ${activeTab === 'payments' ? 'active' : ''}`}
+            onClick={() => setActiveTab('payments')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'payments' ? '#f0fdf4' : 'transparent',
+              color: activeTab === 'payments' ? '#166534' : '#64748b',
+              fontWeight: activeTab === 'payments' ? 800 : 500
+            }}
+            title={isEn ? "Payment Gateways" : "Moyens de Paiement"}
+          >
+            <CreditCard size={18} color={activeTab === 'payments' ? '#166534' : 'currentColor'} />
+            {!isSidebarCollapsed && <span>{isEn ? "Payments" : "Paiements"}</span>}
+            {!isSidebarCollapsed && (
+              <span className="menu-badge" style={{ backgroundColor: '#e0f2fe', color: '#0369a1', borderRadius: '8px', padding: '1px 6px', fontSize: '0.68rem', marginLeft: 'auto', fontWeight: 800 }}>
+                MoMo
+              </span>
+            )}
+          </button>
+
           {/* 9. E-books & Formations */}
           <button 
             className={`admin-menu-item ${activeTab === 'ebooks' ? 'active' : ''}`}
@@ -784,6 +809,7 @@ export default function AdminDashboard({
               {activeTab === 'analytics' && (isEn ? "Analytics & Reports" : "Analytiques & Performance")}
               {activeTab === 'marketing' && (isEn ? "Marketing & Promotions" : "Marketing & Promotions")}
               {activeTab === 'landing_page' && (isEn ? "Landing Page Customizer" : "Personnalisation de la Vitrine")}
+              {activeTab === 'payments' && (isEn ? "Payment Gateways & Mobile Money" : "Moyens de Paiement & Mobile Money")}
               {activeTab === 'ebooks' && (isEn ? "Digital Offers & E-books" : "Offres Numériques & E-books")}
               {activeTab === 'messages' && (isEn ? "Client Inquiries" : "Messages Clients")}
               {activeTab === 'settings' && (isEn ? "Store Settings" : "Paramètres Généraux")}
@@ -1239,6 +1265,29 @@ export default function AdminDashboard({
                       {messages.filter(m => m.status === 'unread').length} {isEn ? "unread messages to respond to" : "messages non lus en attente de réponse"}
                     </p>
                   </div>
+                  {/* Shortcut 4: Payment Gateways */}
+                  <div
+                    onClick={() => setActiveTab('payments')}
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '16px',
+                      border: '1px solid #e5e7eb',
+                      padding: '20px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#dcfce7', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                      <CreditCard size={20} />
+                    </div>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+                      {isEn ? "Payment Gateways & MoMo" : "Moyens de Paiement & MoMo"}
+                    </h4>
+                    <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>
+                      {isEn ? "Configure PayDunya, FedaPay, KKiaPay & Saspay" : "Configurer PayDunya, FedaPay, KKiaPay ou Saspay"}
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -1255,6 +1304,18 @@ export default function AdminDashboard({
                 showAlert={showAlert}
                 showConfirm={showConfirm}
                 goHome={goHome}
+              />
+            </div>
+          )}
+
+          {/* TAB: PAYMENT GATEWAYS (MOMO, FEDAPAY, PAYDUNYA, KKIAPAY, SASPAY) */}
+          {activeTab === 'payments' && (
+            <div style={{ animation: 'fadeIn 0.3s ease', overflowY: 'auto', height: '100%', paddingRight: '12px' }}>
+              <PaymentSettingsEditor
+                settings={settings}
+                updateSettings={updateSettings}
+                lang={lang}
+                showAlert={showAlert}
               />
             </div>
           )}

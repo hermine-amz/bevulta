@@ -1037,6 +1037,7 @@ export default function App() {
             cart={cart}
             lang={lang} 
             showAlert={showAlert} 
+            settings={settings}
           />
         )}
         {currentPage === 'services' && <Services lang={lang} />}
@@ -1052,6 +1053,7 @@ export default function App() {
             lang={lang}
             showAlert={showAlert}
             showConfirm={showConfirm}
+            settings={settings}
           />
         )}
         {currentPage === 'login' && renderLogin()}

@@ -48,4 +48,18 @@ export const defaultSettings = {
   showInteractiveMap: true,
   showAudioSynthesizer: true,
   showCtaBanner: true,
+
+  // Payment Gateway Settings
+  paymentProvider: 'custom_link', // 'custom_link' | 'fedapay' | 'kkiapay' | 'paydunya' | 'momo_manual'
+  paymentMode: 'live', // 'live' | 'test'
+  customPaymentLink: '',
+  fedapayPublicKey: '',
+  kkiapayPublicKey: '',
+  paydunyaMasterKey: '',
+  paydunyaPrivateKey: '',
+  paydunyaToken: '',
+  momoNumber: '+229 97 69 91 78',
+  momoOperator: 'MTN Mobile Money / Moov Money',
+  momoInstructions: 'Effectuez le transfert vers ce numéro avec la référence en motif, puis confirmez sur WhatsApp.',
+  isPaymentActive: true,
 };
