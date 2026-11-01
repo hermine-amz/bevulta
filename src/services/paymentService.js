@@ -74,6 +74,49 @@ export async function initiatePayment({
     return;
   }
 
+  // 3. GeniusPay Integration (Wave, MTN MoMo, Moov, Orange Money & Cartes)
+  if (provider === 'geniuspay') {
+    const geniusLink = (settings.geniuspayPaymentLink || settings.customPaymentLink || '').trim();
+    const apiKey = (settings.geniuspayApiKey || '').trim();
+
+    if (geniusLink) {
+      let targetUrl = geniusLink;
+      if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+        targetUrl = 'https://' + targetUrl;
+      }
+
+      try {
+        const url = new URL(targetUrl);
+        if (!url.searchParams.has('amount')) url.searchParams.set('amount', amountFcfa);
+        if (!url.searchParams.has('ref')) url.searchParams.set('ref', orderId);
+        if (clientInfo.name && !url.searchParams.has('name')) url.searchParams.set('name', clientInfo.name);
+        if (clientInfo.email && !url.searchParams.has('email')) url.searchParams.set('email', clientInfo.email);
+        if (clientInfo.phone && !url.searchParams.has('phone')) url.searchParams.set('phone', clientInfo.phone);
+        window.open(url.toString(), '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: url.toString() });
+      } catch {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: targetUrl });
+      }
+      return;
+    }
+
+    if (!apiKey) {
+      if (onManualMoMo) {
+        onManualMoMo({ amountFcfa, itemTitle, orderId, clientInfo });
+      } else if (onError) {
+        onError(new Error("GeniusPay : Aucun lien de paiement ou clé d'API configuré dans les paramètres."));
+      }
+      return;
+    }
+
+    // Direct GeniusPay Checkout URL fallback
+    const checkoutUrl = `https://pay.genius.ci/pay?api_key=${encodeURIComponent(apiKey)}&amount=${amountFcfa}&ref=${encodeURIComponent(orderId)}`;
+    window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+    if (onSuccess) onSuccess({ type: 'geniuspay_checkout', url: checkoutUrl });
+    return;
+  }
+
   // 2. Custom global link (Saspay, Wave, Paydunya direct link, KKiaPay Me...)
   if (provider === 'custom_link') {
     let globalLink = (settings.customPaymentLink || '').trim();
@@ -104,6 +147,92 @@ export async function initiatePayment({
       window.open(globalLink, '_blank', 'noopener,noreferrer');
       if (onSuccess) onSuccess({ type: 'custom_link', url: globalLink });
     }
+    return;
+  }
+
+  // 3. GeniusPay Integration (Wave, MTN MoMo, Moov, Orange Money & Cartes)
+  if (provider === 'geniuspay') {
+    const geniusLink = (settings.geniuspayPaymentLink || settings.customPaymentLink || '').trim();
+    const apiKey = (settings.geniuspayApiKey || '').trim();
+
+    if (geniusLink) {
+      let targetUrl = geniusLink;
+      if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+        targetUrl = 'https://' + targetUrl;
+      }
+
+      try {
+        const url = new URL(targetUrl);
+        if (!url.searchParams.has('amount')) url.searchParams.set('amount', amountFcfa);
+        if (!url.searchParams.has('ref')) url.searchParams.set('ref', orderId);
+        if (clientInfo.name && !url.searchParams.has('name')) url.searchParams.set('name', clientInfo.name);
+        if (clientInfo.email && !url.searchParams.has('email')) url.searchParams.set('email', clientInfo.email);
+        if (clientInfo.phone && !url.searchParams.has('phone')) url.searchParams.set('phone', clientInfo.phone);
+        window.open(url.toString(), '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: url.toString() });
+      } catch {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: targetUrl });
+      }
+      return;
+    }
+
+    if (!apiKey) {
+      if (onManualMoMo) {
+        onManualMoMo({ amountFcfa, itemTitle, orderId, clientInfo });
+      } else if (onError) {
+        onError(new Error("GeniusPay : Aucun lien de paiement ou clé d'API configuré dans les paramètres."));
+      }
+      return;
+    }
+
+    // Direct GeniusPay Checkout URL fallback
+    const checkoutUrl = `https://pay.genius.ci/pay?api_key=${encodeURIComponent(apiKey)}&amount=${amountFcfa}&ref=${encodeURIComponent(orderId)}`;
+    window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+    if (onSuccess) onSuccess({ type: 'geniuspay_checkout', url: checkoutUrl });
+    return;
+  }
+
+  // 2.5 GeniusPay Integration (Wave, MTN MoMo, Moov, Orange Money & Cartes)
+  if (provider === 'geniuspay') {
+    const geniusLink = (settings.geniuspayPaymentLink || settings.customPaymentLink || '').trim();
+    const apiKey = (settings.geniuspayApiKey || '').trim();
+
+    if (geniusLink) {
+      let targetUrl = geniusLink;
+      if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+        targetUrl = 'https://' + targetUrl;
+      }
+
+      try {
+        const url = new URL(targetUrl);
+        if (!url.searchParams.has('amount')) url.searchParams.set('amount', amountFcfa);
+        if (!url.searchParams.has('ref')) url.searchParams.set('ref', orderId);
+        if (clientInfo.name && !url.searchParams.has('name')) url.searchParams.set('name', clientInfo.name);
+        if (clientInfo.email && !url.searchParams.has('email')) url.searchParams.set('email', clientInfo.email);
+        if (clientInfo.phone && !url.searchParams.has('phone')) url.searchParams.set('phone', clientInfo.phone);
+        window.open(url.toString(), '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: url.toString() });
+      } catch {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: targetUrl });
+      }
+      return;
+    }
+
+    if (!apiKey) {
+      if (onManualMoMo) {
+        onManualMoMo({ amountFcfa, itemTitle, orderId, clientInfo });
+      } else if (onError) {
+        onError(new Error("GeniusPay : Aucun lien de paiement ou clé d'API configuré dans les paramètres."));
+      }
+      return;
+    }
+
+    // Direct GeniusPay Checkout URL
+    const checkoutUrl = `https://pay.genius.ci/pay?api_key=${encodeURIComponent(apiKey)}&amount=${amountFcfa}&ref=${encodeURIComponent(orderId)}`;
+    window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+    if (onSuccess) onSuccess({ type: 'geniuspay_checkout', url: checkoutUrl });
     return;
   }
 
@@ -154,6 +283,49 @@ export async function initiatePayment({
     return;
   }
 
+  // 3. GeniusPay Integration (Wave, MTN MoMo, Moov, Orange Money & Cartes)
+  if (provider === 'geniuspay') {
+    const geniusLink = (settings.geniuspayPaymentLink || settings.customPaymentLink || '').trim();
+    const apiKey = (settings.geniuspayApiKey || '').trim();
+
+    if (geniusLink) {
+      let targetUrl = geniusLink;
+      if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+        targetUrl = 'https://' + targetUrl;
+      }
+
+      try {
+        const url = new URL(targetUrl);
+        if (!url.searchParams.has('amount')) url.searchParams.set('amount', amountFcfa);
+        if (!url.searchParams.has('ref')) url.searchParams.set('ref', orderId);
+        if (clientInfo.name && !url.searchParams.has('name')) url.searchParams.set('name', clientInfo.name);
+        if (clientInfo.email && !url.searchParams.has('email')) url.searchParams.set('email', clientInfo.email);
+        if (clientInfo.phone && !url.searchParams.has('phone')) url.searchParams.set('phone', clientInfo.phone);
+        window.open(url.toString(), '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: url.toString() });
+      } catch {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: targetUrl });
+      }
+      return;
+    }
+
+    if (!apiKey) {
+      if (onManualMoMo) {
+        onManualMoMo({ amountFcfa, itemTitle, orderId, clientInfo });
+      } else if (onError) {
+        onError(new Error("GeniusPay : Aucun lien de paiement ou clé d'API configuré dans les paramètres."));
+      }
+      return;
+    }
+
+    // Direct GeniusPay Checkout URL fallback
+    const checkoutUrl = `https://pay.genius.ci/pay?api_key=${encodeURIComponent(apiKey)}&amount=${amountFcfa}&ref=${encodeURIComponent(orderId)}`;
+    window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+    if (onSuccess) onSuccess({ type: 'geniuspay_checkout', url: checkoutUrl });
+    return;
+  }
+
   // 4. KKiaPay Integration
   if (provider === 'kkiapay') {
     const publicKey = (settings.kkiapayPublicKey || '').trim();
@@ -198,6 +370,49 @@ export async function initiatePayment({
     return;
   }
 
+  // 3. GeniusPay Integration (Wave, MTN MoMo, Moov, Orange Money & Cartes)
+  if (provider === 'geniuspay') {
+    const geniusLink = (settings.geniuspayPaymentLink || settings.customPaymentLink || '').trim();
+    const apiKey = (settings.geniuspayApiKey || '').trim();
+
+    if (geniusLink) {
+      let targetUrl = geniusLink;
+      if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+        targetUrl = 'https://' + targetUrl;
+      }
+
+      try {
+        const url = new URL(targetUrl);
+        if (!url.searchParams.has('amount')) url.searchParams.set('amount', amountFcfa);
+        if (!url.searchParams.has('ref')) url.searchParams.set('ref', orderId);
+        if (clientInfo.name && !url.searchParams.has('name')) url.searchParams.set('name', clientInfo.name);
+        if (clientInfo.email && !url.searchParams.has('email')) url.searchParams.set('email', clientInfo.email);
+        if (clientInfo.phone && !url.searchParams.has('phone')) url.searchParams.set('phone', clientInfo.phone);
+        window.open(url.toString(), '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: url.toString() });
+      } catch {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: targetUrl });
+      }
+      return;
+    }
+
+    if (!apiKey) {
+      if (onManualMoMo) {
+        onManualMoMo({ amountFcfa, itemTitle, orderId, clientInfo });
+      } else if (onError) {
+        onError(new Error("GeniusPay : Aucun lien de paiement ou clé d'API configuré dans les paramètres."));
+      }
+      return;
+    }
+
+    // Direct GeniusPay Checkout URL fallback
+    const checkoutUrl = `https://pay.genius.ci/pay?api_key=${encodeURIComponent(apiKey)}&amount=${amountFcfa}&ref=${encodeURIComponent(orderId)}`;
+    window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+    if (onSuccess) onSuccess({ type: 'geniuspay_checkout', url: checkoutUrl });
+    return;
+  }
+
   // 5. PayDunya Integration
   if (provider === 'paydunya') {
     const masterKey = (settings.paydunyaMasterKey || '').trim();
@@ -228,11 +443,97 @@ export async function initiatePayment({
     return;
   }
 
+  // 3. GeniusPay Integration (Wave, MTN MoMo, Moov, Orange Money & Cartes)
+  if (provider === 'geniuspay') {
+    const geniusLink = (settings.geniuspayPaymentLink || settings.customPaymentLink || '').trim();
+    const apiKey = (settings.geniuspayApiKey || '').trim();
+
+    if (geniusLink) {
+      let targetUrl = geniusLink;
+      if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+        targetUrl = 'https://' + targetUrl;
+      }
+
+      try {
+        const url = new URL(targetUrl);
+        if (!url.searchParams.has('amount')) url.searchParams.set('amount', amountFcfa);
+        if (!url.searchParams.has('ref')) url.searchParams.set('ref', orderId);
+        if (clientInfo.name && !url.searchParams.has('name')) url.searchParams.set('name', clientInfo.name);
+        if (clientInfo.email && !url.searchParams.has('email')) url.searchParams.set('email', clientInfo.email);
+        if (clientInfo.phone && !url.searchParams.has('phone')) url.searchParams.set('phone', clientInfo.phone);
+        window.open(url.toString(), '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: url.toString() });
+      } catch {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: targetUrl });
+      }
+      return;
+    }
+
+    if (!apiKey) {
+      if (onManualMoMo) {
+        onManualMoMo({ amountFcfa, itemTitle, orderId, clientInfo });
+      } else if (onError) {
+        onError(new Error("GeniusPay : Aucun lien de paiement ou clé d'API configuré dans les paramètres."));
+      }
+      return;
+    }
+
+    // Direct GeniusPay Checkout URL fallback
+    const checkoutUrl = `https://pay.genius.ci/pay?api_key=${encodeURIComponent(apiKey)}&amount=${amountFcfa}&ref=${encodeURIComponent(orderId)}`;
+    window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+    if (onSuccess) onSuccess({ type: 'geniuspay_checkout', url: checkoutUrl });
+    return;
+  }
+
   // 6. Manual Mobile Money transfer modal
   if (provider === 'momo_manual' || provider === 'manual') {
     if (onManualMoMo) {
       onManualMoMo({ amountFcfa, itemTitle, orderId, clientInfo });
     }
+    return;
+  }
+
+  // 3. GeniusPay Integration (Wave, MTN MoMo, Moov, Orange Money & Cartes)
+  if (provider === 'geniuspay') {
+    const geniusLink = (settings.geniuspayPaymentLink || settings.customPaymentLink || '').trim();
+    const apiKey = (settings.geniuspayApiKey || '').trim();
+
+    if (geniusLink) {
+      let targetUrl = geniusLink;
+      if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+        targetUrl = 'https://' + targetUrl;
+      }
+
+      try {
+        const url = new URL(targetUrl);
+        if (!url.searchParams.has('amount')) url.searchParams.set('amount', amountFcfa);
+        if (!url.searchParams.has('ref')) url.searchParams.set('ref', orderId);
+        if (clientInfo.name && !url.searchParams.has('name')) url.searchParams.set('name', clientInfo.name);
+        if (clientInfo.email && !url.searchParams.has('email')) url.searchParams.set('email', clientInfo.email);
+        if (clientInfo.phone && !url.searchParams.has('phone')) url.searchParams.set('phone', clientInfo.phone);
+        window.open(url.toString(), '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: url.toString() });
+      } catch {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        if (onSuccess) onSuccess({ type: 'geniuspay_link', url: targetUrl });
+      }
+      return;
+    }
+
+    if (!apiKey) {
+      if (onManualMoMo) {
+        onManualMoMo({ amountFcfa, itemTitle, orderId, clientInfo });
+      } else if (onError) {
+        onError(new Error("GeniusPay : Aucun lien de paiement ou clé d'API configuré dans les paramètres."));
+      }
+      return;
+    }
+
+    // Direct GeniusPay Checkout URL fallback
+    const checkoutUrl = `https://pay.genius.ci/pay?api_key=${encodeURIComponent(apiKey)}&amount=${amountFcfa}&ref=${encodeURIComponent(orderId)}`;
+    window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+    if (onSuccess) onSuccess({ type: 'geniuspay_checkout', url: checkoutUrl });
     return;
   }
 

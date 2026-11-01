@@ -20,6 +20,8 @@ export default function PaymentSettingsEditor({
     paymentProvider: settings.paymentProvider || 'custom_link',
     paymentMode: settings.paymentMode || 'live',
     customPaymentLink: settings.customPaymentLink || '',
+    geniuspayApiKey: settings.geniuspayApiKey || '',
+    geniuspayPaymentLink: settings.geniuspayPaymentLink || '',
     fedapayPublicKey: settings.fedapayPublicKey || '',
     kkiapayPublicKey: settings.kkiapayPublicKey || '',
     paydunyaMasterKey: settings.paydunyaMasterKey || '',
@@ -74,6 +76,15 @@ export default function PaymentSettingsEditor({
       badgeBg: '#dcfce7',
       desc: 'Idéal si vous ne voulez manipuler aucune clé API. Collez simplement le lien de votre page de paiement ou de votre compte marchand.',
       icon: <Globe size={24} color="#0284c7" />
+    },
+    {
+      id: 'geniuspay',
+      title: 'GeniusPay (Wave, MoMo, Moov, Orange, Carte)',
+      badge: 'Wave & UEMOA',
+      badgeColor: '#059669',
+      badgeBg: '#d1fae5',
+      desc: 'Acceptez Wave, MTN MoMo, Moov Money, Orange Money et Cartes Bancaires en FCFA avec lien de paiement ou API GeniusPay.',
+      icon: <Zap size={24} color="#059669" />
     },
     {
       id: 'fedapay',
@@ -310,6 +321,67 @@ export default function PaymentSettingsEditor({
               />
               <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginTop: '6px' }}>
                 💡 Le montant de la commande et la référence seront automatiquement ajoutés à ce lien.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* OPTION: GENIUSPAY */}
+        {formData.paymentProvider === 'geniuspay' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+              <Zap size={20} color="#059669" />
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Configuration GeniusPay (Wave, MoMo, Moov, Orange Money & Cartes)
+              </h3>
+            </div>
+            <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '20px' }}>
+              Encaissez facilement les paiements Mobile Money et cartes bancaires en zone Franc CFA. Rendez-vous sur votre compte marchand <a href="https://pay.genius.ci" target="_blank" rel="noopener noreferrer" style={{ color: '#059669', fontWeight: 700, textDecoration: 'underline' }}>pay.genius.ci</a> pour récupérer vos identifiants ou votre lien.
+            </p>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                Lien de Caisse ou de Paiement GeniusPay (Option Rapide & Recommandée) :
+              </label>
+              <input
+                type="url"
+                value={formData.geniuspayPaymentLink}
+                onChange={(e) => handleChange('geniuspayPaymentLink', e.target.value)}
+                placeholder="https://pay.genius.ci/pay/votre-compte ou lien marchand..."
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.92rem',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginTop: '6px' }}>
+                💡 En configurant ce lien, les acheteurs y seront redirigés automatiquement avec le montant de leur commande prérempli.
+              </span>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                Clé d'API GeniusPay ({formData.paymentMode === 'live' ? 'Mode Production' : 'Mode Sandbox / Test'}) :
+              </label>
+              <input
+                type="text"
+                value={formData.geniuspayApiKey}
+                onChange={(e) => handleChange('geniuspayApiKey', e.target.value)}
+                placeholder={formData.paymentMode === 'live' ? 'pk_live_...' : 'pk_sandbox_...'}
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.92rem',
+                  fontFamily: 'monospace'
+                }}
+              />
+              <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginTop: '6px' }}>
+                Disponibles dans votre espace GeniusPay &gt; Paramètres &gt; Développeur / Clés API.
               </span>
             </div>
           </div>

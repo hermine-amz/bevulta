@@ -603,11 +603,11 @@ export default function EbookEditor({ ebook, onSave, onCancel, allEbooks = [], l
             </div>
 
             <div className="form-group">
-              <label className="form-label">{isEn ? "Direct Payment Link (Saspay / Wave / PayDunya - Optional)" : "Lien de paiement direct spécifique (Saspay / Wave / PayDunya - Optionnel)"}</label>
+              <label className="form-label">{isEn ? "Direct Payment Link (GeniusPay / Saspay / Wave / PayDunya - Optional)" : "Lien de paiement direct spécifique (GeniusPay / Saspay / Wave / PayDunya - Optionnel)"}</label>
               <input 
                 type="url" 
                 className="form-input" 
-                placeholder="https://saspay.me/... ou https://paydunya.com/p/..."
+                placeholder="https://pay.genius.ci/... ou https://saspay.me/..."
                 value={paymentLink} 
                 onChange={(e) => setPaymentLink(e.target.value)} 
               />

@@ -50,9 +50,11 @@ export const defaultSettings = {
   showCtaBanner: true,
 
   // Payment Gateway Settings
-  paymentProvider: 'custom_link', // 'custom_link' | 'fedapay' | 'kkiapay' | 'paydunya' | 'momo_manual'
+  paymentProvider: 'custom_link', // 'custom_link' | 'geniuspay' | 'fedapay' | 'kkiapay' | 'paydunya' | 'momo_manual'
   paymentMode: 'live', // 'live' | 'test'
   customPaymentLink: '',
+  geniuspayApiKey: '',
+  geniuspayPaymentLink: '',
   fedapayPublicKey: '',
   kkiapayPublicKey: '',
   paydunyaMasterKey: '',
