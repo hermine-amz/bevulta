@@ -14,6 +14,7 @@ import OrderEditor from './OrderEditor';
 import EbookEditor from './EbookEditor';
 import LandingPageEditor from '../components/LandingPageEditor';
 import PaymentSettingsEditor from '../components/PaymentSettingsEditor';
+import AdminHelpCenter from '../components/AdminHelpCenter';
 
 export default function AdminDashboard({ 
   products, addProduct, updateProduct, deleteProduct,
@@ -1724,96 +1725,11 @@ export default function AdminDashboard({
 
           {/* TAB: CENTRE D'AIDE */}
           {activeTab === 'help' && (
-            <div style={{ animation: 'fadeIn 0.3s ease', overflowY: 'auto', height: '100%', paddingRight: '12px', maxWidth: '1000px', margin: '0 auto' }}>
-              <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
-                  {isEn ? "Help Center & Documentation" : "Centre d'Aide & Documentation"}
-                </h3>
-                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
-                  {isEn ? "Everything you need to master your dashboard and manage your workshop." : "Retrouvez les guides essentiels pour administrer votre atelier et votre vitrine en toute simplicité."}
-                </p>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-                <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e5e7eb', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
-                    💡 Comment modifier la landing page ?
-                  </h4>
-                  <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5 }}>
-                    Rendez-vous dans l'onglet <strong>Landing Page</strong> depuis le menu de gauche. Vous pouvez modifier les titres, les boutons, les numéros de téléphone et activer/désactiver les blocs en 1 clic.
-                  </p>
-                </div>
-
-                <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e5e7eb', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
-                    📦 Comment ajouter une nouvelle machine ?
-                  </h4>
-                  <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5 }}>
-                    Dans l'onglet <strong>Produits</strong>, cliquez sur le bouton <strong>+ Ajouter une machine</strong>. Remplissez le nom, la catégorie, le prix en FCFA, les spécifications techniques et l'image.
-                  </p>
-                </div>
-
-                <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e5e7eb', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
-                    💬 Comment contacter un client sur WhatsApp ?
-                  </h4>
-                  <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5 }}>
-                    Dans l'onglet <strong>Clients</strong> ou <strong>Ventes</strong>, cliquez sur le bouton vert <strong>WhatsApp</strong> en regard du client pour lui envoyer un message direct pré-rempli.
-                  </p>
-                </div>
-              </div>
-
-              {/* Direct Support Card */}
-              <div style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)', borderRadius: '16px', border: '1px solid #bbf7d0', padding: '28px', textAlign: 'center' }}>
-                <h4 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#166534', marginBottom: '8px' }}>
-                  Besoin d'une assistance directe ?
-                </h4>
-                <p style={{ fontSize: '0.9rem', color: '#475569', maxWidth: '600px', margin: '0 auto 20px', lineHeight: 1.5 }}>
-                  Notre équipe technique et support est à votre disposition par WhatsApp ou par téléphone pour vous assister.
-                </p>
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={() => window.open(`https://wa.me/${(settings?.whatsappNumber || '22997699178').replace(/[^0-9]/g, '')}`, '_blank')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '10px 20px',
-                      borderRadius: '10px',
-                      border: 'none',
-                      background: '#16a34a',
-                      color: 'white',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <MessageCircle size={18} />
-                    <span>Ouvrir WhatsApp Support</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => window.location.href = `tel:${settings?.contactPhone1 || '+22997699178'}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '10px 20px',
-                      borderRadius: '10px',
-                      border: '1px solid #cbd5e1',
-                      background: 'white',
-                      color: '#0f172a',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <Phone size={18} />
-                    <span>Appeler l'Atelier</span>
-                  </button>
-                </div>
-              </div>
-            </div>
+            <AdminHelpCenter 
+              lang={lang} 
+              settings={settings} 
+              setActiveTab={setActiveTab} 
+            />
           )}
 
           {/* TAB 2: ORDERS LIST */}

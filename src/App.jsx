@@ -136,7 +136,10 @@ export default function App() {
   const [loginPassword, setLoginPassword] = useState('');
 
   // Database states
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(() => {
+    const saved = localStorage.getItem('bevulta_products');
+    return saved ? JSON.parse(saved) : initialProducts;
+  });
   const [ebooks, setEbooks] = useState(() => {
     const saved = localStorage.getItem('bevulta_ebooks');
     return saved ? JSON.parse(saved) : initialEbooks;
@@ -174,6 +177,50 @@ export default function App() {
     setModalState({ isOpen: true, message, type: 'confirm', onConfirm });
   };
 
+  // Restore authenticated session from Supabase on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const role = session.user.email?.toLowerCase().includes('admin') ? 'admin' : 'client';
+          const loggedUser = {
+            id: session.user.id,
+            email: session.user.email,
+            name: session.user.user_metadata?.full_name || (role === 'admin' ? 'Administrator' : 'Client'),
+            role: role
+          };
+          setUser(loggedUser);
+          localStorage.setItem('bevulta_user', JSON.stringify(loggedUser));
+        }
+      } catch (err) {
+        console.warn("Session restore error:", err);
+      }
+    };
+    checkSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        const role = session.user.email?.toLowerCase().includes('admin') ? 'admin' : 'client';
+        const loggedUser = {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.user_metadata?.full_name || (role === 'admin' ? 'Administrator' : 'Client'),
+          role: role
+        };
+        setUser(loggedUser);
+        localStorage.setItem('bevulta_user', JSON.stringify(loggedUser));
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        localStorage.removeItem('bevulta_user');
+      }
+    });
+
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
+
   // Fetch all data from Supabase on mount
   useEffect(() => {
     const fetchData = async () => {
@@ -181,7 +228,7 @@ export default function App() {
         // Fetch products
         const { data: prodData, error: prodErr } = await supabase.from('products').select('*').order('id', { ascending: true });
         if (!prodErr && prodData && prodData.length > 0) {
-          setProducts(prodData.map(p => ({
+          const mapped = prodData.map(p => ({
             id: p.id,
             name: p.name,
             category: p.category,
@@ -191,14 +238,17 @@ export default function App() {
             priceEur: p.price_eur,
             availability: p.availability,
             image: p.image_url,
-            specs: p.specs,
-            isVisible: p.is_visible !== false,
-            promoPriceFcfa: p.promo_price_fcfa || null,
-            promoPriceEur: p.promo_price_eur || null,
-          })));
+            specs: p.specs || {},
+            isVisible: p.specs?._isVisible !== undefined ? p.specs._isVisible : true,
+            promoPriceFcfa: p.specs?._promoPriceFcfa || null,
+            promoPriceEur: p.specs?._promoPriceFcfa ? Math.round(Number(p.specs._promoPriceFcfa) / 655.957) : null,
+          }));
+          setProducts(mapped);
+          localStorage.setItem('bevulta_products', JSON.stringify(mapped));
         } else if (prodErr) {
-          console.warn("Supabase fetch failed for products:", prodErr.message);
-          setProducts(initialProducts); // fallback
+          console.warn("Supabase fetch failed for products, using cached products:", prodErr.message);
+          const saved = localStorage.getItem('bevulta_products');
+          if (saved) setProducts(JSON.parse(saved));
         }
 
         // Fetch orders and items
@@ -433,65 +483,92 @@ export default function App() {
 
   // Product CRUD
   const addProduct = async (newProduct) => {
-    setProducts((prev) => [newProduct, ...prev]);
+    // Determine a safe numeric ID
+    const maxId = products.reduce((max, p) => (typeof p.id === 'number' && p.id > max ? p.id : max), 16);
+    const assignedId = typeof newProduct.id === 'number' && newProduct.id < 100000 ? newProduct.id : maxId + 1;
+    const finalProduct = { ...newProduct, id: assignedId };
+
+    setProducts((prev) => {
+      const next = [finalProduct, ...prev];
+      localStorage.setItem('bevulta_products', JSON.stringify(next));
+      return next;
+    });
+
     try {
       const dbProduct = {
-        id: newProduct.id,
-        name: newProduct.name,
-        category: newProduct.category,
-        subcategory: newProduct.subcategory,
-        description: newProduct.description,
-        price_fcfa: newProduct.priceFcfa,
-        price_eur: newProduct.priceEur,
-        availability: newProduct.availability,
-        image_url: newProduct.image,
-        specs: newProduct.specs,
-        is_visible: newProduct.isVisible !== false,
-        promo_price_fcfa: newProduct.promoPriceFcfa ? Number(newProduct.promoPriceFcfa) : null,
-        promo_price_eur: newProduct.promoPriceFcfa ? Math.round(Number(newProduct.promoPriceFcfa) / 655.957) : null,
+        id: assignedId,
+        name: finalProduct.name,
+        category: finalProduct.category,
+        subcategory: finalProduct.subcategory || 'Matériels de transformation de Karité',
+        description: finalProduct.description || '',
+        price_fcfa: Number(finalProduct.priceFcfa) || 0,
+        price_eur: finalProduct.priceEur || Math.round((Number(finalProduct.priceFcfa) || 0) / 655.957),
+        availability: finalProduct.availability || 'Sur commande (15-30 jours)',
+        image_url: finalProduct.image || '',
+        specs: {
+          ...(finalProduct.specs || {}),
+          _isVisible: finalProduct.isVisible !== false,
+          _promoPriceFcfa: finalProduct.promoPriceFcfa ? Number(finalProduct.promoPriceFcfa) : null,
+        }
       };
-      await supabase.from('products').insert([dbProduct]);
+      const { error } = await supabase.from('products').insert([dbProduct]);
+      if (error) console.error("Failed to sync new product to Supabase:", error);
     } catch (err) {
       console.error("Failed to sync new product to Supabase:", err);
     }
   };
 
   const updateProduct = async (updatedProduct) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
-    );
+    setProducts((prev) => {
+      const next = prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p));
+      localStorage.setItem('bevulta_products', JSON.stringify(next));
+      return next;
+    });
+
     try {
       const dbProduct = {
         name: updatedProduct.name,
         category: updatedProduct.category,
-        subcategory: updatedProduct.subcategory,
-        description: updatedProduct.description,
-        price_fcfa: updatedProduct.priceFcfa,
-        price_eur: updatedProduct.priceEur,
-        availability: updatedProduct.availability,
-        image_url: updatedProduct.image,
-        specs: updatedProduct.specs,
-        is_visible: updatedProduct.isVisible !== false,
-        promo_price_fcfa: updatedProduct.promoPriceFcfa ? Number(updatedProduct.promoPriceFcfa) : null,
-        promo_price_eur: updatedProduct.promoPriceFcfa ? Math.round(Number(updatedProduct.promoPriceFcfa) / 655.957) : null,
+        subcategory: updatedProduct.subcategory || 'Matériels de transformation de Karité',
+        description: updatedProduct.description || '',
+        price_fcfa: Number(updatedProduct.priceFcfa) || 0,
+        price_eur: updatedProduct.priceEur || Math.round((Number(updatedProduct.priceFcfa) || 0) / 655.957),
+        availability: updatedProduct.availability || 'Sur commande (15-30 jours)',
+        image_url: updatedProduct.image || '',
+        specs: {
+          ...(updatedProduct.specs || {}),
+          _isVisible: updatedProduct.isVisible !== false,
+          _promoPriceFcfa: updatedProduct.promoPriceFcfa ? Number(updatedProduct.promoPriceFcfa) : null,
+        }
       };
-      await supabase.from('products').update(dbProduct).eq('id', updatedProduct.id);
+      const { error } = await supabase.from('products').update(dbProduct).eq('id', updatedProduct.id);
+      if (error) console.error("Failed to sync updated product to Supabase:", error);
     } catch (err) {
       console.error("Failed to sync updated product to Supabase:", err);
     }
   };
 
   const bulkUpdateProducts = async (ids, updates) => {
-    setProducts((prev) =>
-      prev.map((p) => (ids.includes(p.id) ? { ...p, ...updates } : p))
-    );
+    setProducts((prev) => {
+      const next = prev.map((p) => (ids.includes(p.id) ? { ...p, ...updates } : p));
+      localStorage.setItem('bevulta_products', JSON.stringify(next));
+      return next;
+    });
+
     try {
-      const dbUpdates = {};
-      if (updates.isVisible !== undefined) dbUpdates.is_visible = updates.isVisible;
-      if (updates.availability !== undefined) dbUpdates.availability = updates.availability;
-      
-      if (Object.keys(dbUpdates).length > 0) {
-        await supabase.from('products').update(dbUpdates).in('id', ids);
+      for (const id of ids) {
+        const prod = products.find(p => p.id === id);
+        if (!prod) continue;
+        const newAvailability = updates.availability !== undefined ? updates.availability : prod.availability;
+        const newIsVisible = updates.isVisible !== undefined ? updates.isVisible : prod.isVisible;
+
+        await supabase.from('products').update({
+          availability: newAvailability,
+          specs: {
+            ...(prod.specs || {}),
+            _isVisible: newIsVisible
+          }
+        }).eq('id', id);
       }
     } catch (err) {
       console.error("Failed to sync bulk updated products to Supabase:", err);
@@ -505,9 +582,14 @@ export default function App() {
         ? `Êtes-vous sûr de vouloir supprimer ${idsArray.length > 1 ? `ces ${idsArray.length} machines` : 'cette machine'} du catalogue ?` 
         : `Are you sure you want to delete ${idsArray.length > 1 ? `these ${idsArray.length} machines` : 'this machine'}?`,
       async () => {
-        setProducts((prev) => prev.filter((p) => !idsArray.includes(p.id)));
+        setProducts((prev) => {
+          const next = prev.filter((p) => !idsArray.includes(p.id));
+          localStorage.setItem('bevulta_products', JSON.stringify(next));
+          return next;
+        });
         try {
-          await supabase.from('products').delete().in('id', idsArray);
+          const { error } = await supabase.from('products').delete().in('id', idsArray);
+          if (error) console.error("Failed to sync deleted product to Supabase:", error);
         } catch (err) {
           console.error("Failed to sync deleted product to Supabase:", err);
         }
@@ -738,18 +820,38 @@ export default function App() {
     const cleanId = loginIdentifier.trim();
     const cleanPass = loginPassword.trim();
 
-    // 1. Check local demo credentials first for testing ease
-    if (cleanId === 'admin@bevulta.com' && cleanPass === 'admin12345') {
-      const loggedUser = { email: 'admin@bevulta.com', name: 'Administrator', role: 'admin' };
-      setUser(loggedUser);
-      setCurrentPage('admin');
-      setLoginIdentifier('');
-      setLoginPassword('');
-      return;
+    // 1. Try Supabase Auth first with automatic normalization
+    try {
+      const authEmail = (cleanId === 'admin' || cleanId === 'admin@bevulta.com') ? 'admin@bevulta.com' : cleanId;
+      const authPass = (cleanId === 'admin' && cleanPass === 'admin') ? 'admin12345' : cleanPass;
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: authEmail,
+        password: authPass
+      });
+
+      if (!error && data?.user) {
+        const role = data.user.email?.toLowerCase().includes('admin') ? 'admin' : 'client';
+        const loggedUser = {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.user_metadata?.full_name || (role === 'admin' ? 'Administrator' : 'Client'),
+          role: role
+        };
+        setUser(loggedUser);
+        localStorage.setItem('bevulta_user', JSON.stringify(loggedUser));
+        setCurrentPage(role === 'admin' ? 'admin' : 'client-dashboard');
+        setLoginIdentifier('');
+        setLoginPassword('');
+        showAlert(lang === 'fr' ? 'Connexion réussie !' : 'Logged in successfully!');
+        return;
+      }
+    } catch (err) {
+      console.warn("Supabase Auth error:", err.message);
     }
 
+    // 2. Client demo fallback
     if ((cleanId === 'client' || cleanId === 'client@bevulta.com' || cleanId === 'm.toure@agroholding-tg.com') && cleanPass === 'client') {
-      // Set email to m.toure@agroholding-tg.com so they pull the matching mock orders
       const loggedUser = { 
         email: 'm.toure@agroholding-tg.com', 
         name: 'Mamadou Touré', 
@@ -760,47 +862,37 @@ export default function App() {
         address: 'Lomé, Quartier Deckon, Rue des Hydrocarbures'
       };
       setUser(loggedUser);
+      localStorage.setItem('bevulta_user', JSON.stringify(loggedUser));
       setCurrentPage('client-dashboard');
       setLoginIdentifier('');
       setLoginPassword('');
       return;
     }
 
-    // 2. Try Supabase Auth if credentials differ
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanId,
-        password: cleanPass
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data?.user) {
-        const role = data.user.email.toLowerCase().includes('admin') ? 'admin' : 'client';
-        const loggedUser = {
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.user_metadata?.full_name || (role === 'admin' ? 'Administrator' : 'Client'),
-          role: role
-        };
-        setUser(loggedUser);
-        setCurrentPage(role === 'admin' ? 'admin' : 'client-dashboard');
-        setLoginIdentifier('');
-        setLoginPassword('');
-      }
-    } catch (err) {
-      console.warn("Supabase Auth failed or bypassed. Details:", err.message);
-      showAlert(lang === 'fr' 
-        ? `Identifiants incorrects. Pour tester, utilisez :\n- admin / admin (Admin)\n- client / client (Client)`
-        : `Invalid credentials. For testing, please use:\n- admin / admin (Admin)\n- client / client (Client)`);
+    // 3. Fallback admin demo (offline/no network fallback)
+    if ((cleanId === 'admin' || cleanId === 'admin@bevulta.com') && (cleanPass === 'admin' || cleanPass === 'admin12345')) {
+      const loggedUser = { email: 'admin@bevulta.com', name: 'Administrator', role: 'admin' };
+      setUser(loggedUser);
+      localStorage.setItem('bevulta_user', JSON.stringify(loggedUser));
+      setCurrentPage('admin');
+      setLoginIdentifier('');
+      setLoginPassword('');
+      return;
     }
+
+    showAlert(lang === 'fr' 
+      ? `Identifiants incorrects. Pour tester :\n- admin / admin ou admin@bevulta.com / admin12345 (Admin)\n- client / client (Client)`
+      : `Invalid credentials. For testing:\n- admin / admin (Admin)\n- client / client (Client)`);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setUser(null);
     localStorage.removeItem('bevulta_user');
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn("Logout error:", err);
+    }
     setCurrentPage('home');
   };
 
