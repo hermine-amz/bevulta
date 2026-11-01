@@ -34,12 +34,13 @@ function formatDate(date = new Date()) {
  * 2. Bottom legal attribution text with buyer's name, email, and order ID.
  * 3. Diagonal semi-transparent watermark across the center of each page (Email + Timestamp).
  */
-export async function stampPdfWithWatermark(pdfDoc, { clientName, clientEmail, orderId, dateStr, websiteUrl = 'bevulta.com' }) {
+export async function stampPdfWithWatermark(pdfDoc, { clientName, clientEmail, clientPhone, orderId, dateStr, websiteUrl = 'bevulta.com' }) {
   const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
   const cleanName = sanitizeForPdf(clientName || 'Client BEVULTA');
   const cleanEmail = sanitizeForPdf(clientEmail || 'client@bevulta.com');
+  const cleanPhone = sanitizeForPdf(clientPhone || '');
   const cleanOrderId = sanitizeForPdf(orderId || 'CMD-BEVULTA');
   const cleanDate = dateStr || formatDate();
 
@@ -57,31 +58,40 @@ export async function stampPdfWithWatermark(pdfDoc, { clientName, clientEmail, o
       color: rgb(0.85, 0.47, 0.05), // #d97706
     });
 
-    // 2. Diagonal Watermark in Center (Anti-Sharing)
-    const watermarkText = `${cleanEmail} - ${cleanDate}`;
-    const watermarkFontSize = Math.max(14, Math.min(22, width / 28));
+    // 2. Large Diagonal Watermark in Center (Anti-Sharing with Email + Phone + Date)
+    const phonePart = cleanPhone ? ` (${cleanPhone})` : '';
+    const watermarkText = `${cleanEmail}${phonePart} - ${cleanDate}`;
 
-    // Draw 2 diagonal lines of watermark to cover top & bottom halves of page
-    const watermarkPositions = [
-      { x: width * 0.15, y: height * 0.40 },
-      { x: width * 0.25, y: height * 0.65 }
-    ];
+    // Large and clearly visible font size (24pt - 26pt)
+    const watermarkFontSize = Math.max(20, Math.min(26, width / 23));
+    const textWidth = boldFont.widthOfTextAtSize(watermarkText, watermarkFontSize);
+    const textHeight = boldFont.heightAtSize(watermarkFontSize);
 
-    for (const pos of watermarkPositions) {
-      page.drawText(watermarkText, {
-        x: pos.x,
-        y: pos.y,
-        size: watermarkFontSize,
-        font: boldFont,
-        color: rgb(0.68, 0.72, 0.76), // subtle slate gray
-        opacity: 0.16,
-        rotate: degrees(42),
-      });
-    }
+    // Exact geometric centering for 45° rotation
+    const angle = 45;
+    const rad = (angle * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    const cx = width / 2;
+    const cy = height / 2;
+
+    const centerX = cx - ((textWidth / 2) * cos - (textHeight / 2) * sin);
+    const centerY = cy - ((textWidth / 2) * sin + (textHeight / 2) * cos);
+
+    // Prominent, crisp, well-centered watermark
+    page.drawText(watermarkText, {
+      x: centerX,
+      y: centerY,
+      size: watermarkFontSize,
+      font: boldFont,
+      color: rgb(0.50, 0.50, 0.50), // distinct visible slate gray
+      opacity: 0.36, // clearly visible and legible over content
+      rotate: degrees(angle),
+    });
 
     // 3. Bottom Legal Notice Footer (Anti-Piracy & Copyright)
     const footerY = 22;
-    // Light background bar for high contrast
     page.drawRectangle({
       x: 0,
       y: 0,
@@ -90,7 +100,6 @@ export async function stampPdfWithWatermark(pdfDoc, { clientName, clientEmail, o
       color: rgb(0.97, 0.98, 0.99),
     });
 
-    // Thin separator line
     page.drawLine({
       start: { x: 0, y: 44 },
       end: { x: width, y: 44 },
@@ -98,8 +107,9 @@ export async function stampPdfWithWatermark(pdfDoc, { clientName, clientEmail, o
       color: rgb(0.85, 0.88, 0.92),
     });
 
-    const line1 = `Ce document est autorise uniquement pour ${cleanName} (${cleanEmail}) et est protege par le droit d'auteur.`;
-    const line2 = `Toute republication ou partage constitue une violation. Contact: ${websiteUrl} | Réf Commande : ${cleanOrderId}`;
+    const phoneInFooter = cleanPhone ? ` | Tel: ${cleanPhone}` : '';
+    const line1 = `Ce document est autorise uniquement pour ${cleanName} (${cleanEmail}${phoneInFooter}) et est protege par le droit d'auteur.`;
+    const line2 = `Toute republication ou partage constitue une violation. Contact: ${websiteUrl} | Ref Commande : ${cleanOrderId}`;
 
     page.drawText(line1, {
       x: 24,
@@ -137,6 +147,7 @@ export async function createBrandedEbookPdf(ebook, customer) {
   const author = sanitizeForPdf(ebook.author || "Bureau d'Etudes BEVULTA");
   const cleanName = sanitizeForPdf(customer.name || 'Client BEVULTA');
   const cleanEmail = sanitizeForPdf(customer.email || 'client@bevulta.com');
+  const cleanPhone = sanitizeForPdf(customer.phone || '');
   const cleanOrder = sanitizeForPdf(customer.orderId || 'BEV-CMD-2026');
 
   // ================= PAGE 1 : COUVERTURE OFFICIELLE =================
@@ -262,9 +273,19 @@ export async function createBrandedEbookPdf(ebook, customer) {
     color: rgb(0.2, 0.25, 0.3),
   });
 
+  if (cleanPhone) {
+    page1.drawText(`Telephone / MoMo : ${cleanPhone}`, {
+      x: 64,
+      y: 330,
+      size: 10,
+      font: regularFont,
+      color: rgb(0.2, 0.25, 0.3),
+    });
+  }
+
   page1.drawText(`Numero de commande : ${cleanOrder}`, {
     x: 64,
-    y: 325,
+    y: cleanPhone ? 308 : 325,
     size: 10,
     font: boldFont,
     color: rgb(0.85, 0.47, 0.05),
@@ -272,27 +293,27 @@ export async function createBrandedEbookPdf(ebook, customer) {
 
   page1.drawText(`Date d'activation : ${formatDate()}`, {
     x: 64,
-    y: 300,
+    y: cleanPhone ? 288 : 300,
     size: 9.5,
     font: regularFont,
     color: rgb(0.4, 0.45, 0.5),
   });
 
-  page1.drawText('Protection anti-partage :', {
+  page1.drawText('Notice legale & Droits d\'auteur :', {
     x: 64,
     y: 260,
     size: 9.5,
     font: boldFont,
-    color: rgb(0.8, 0.2, 0.2),
+    color: rgb(0.2, 0.25, 0.3),
   });
-  page1.drawText('Chaque page de ce document contient vos empreintes numeriques d\'identification.', {
+  page1.drawText('Ce guide technique est protege par les lois relatives a la propriete intellectuelle.', {
     x: 64,
     y: 242,
     size: 8.5,
     font: regularFont,
     color: rgb(0.4, 0.45, 0.5),
   });
-  page1.drawText('Toute diffusion publique ou transfert a des tiers est strictement interdit par la loi.', {
+  page1.drawText('Usage strictement personnel et reserve au titulaire de cette licence.', {
     x: 64,
     y: 226,
     size: 8.5,
@@ -451,6 +472,7 @@ export async function createBrandedEbookPdf(ebook, customer) {
   await stampPdfWithWatermark(pdfDoc, {
     clientName: cleanName,
     clientEmail: cleanEmail,
+    clientPhone: cleanPhone,
     orderId: cleanOrder,
     dateStr: formatDate(),
     websiteUrl: 'bevulta.vercel.app'
@@ -465,7 +487,12 @@ export async function createBrandedEbookPdf(ebook, customer) {
  * otherwise creates an authentic official BEVULTA stamped e-book.
  */
 export async function downloadWatermarkedPdf(ebook, customerInfo = {}) {
-  const { name = 'Client BEVULTA', email = 'client@bevulta.com', orderId = 'CMD-BEVULTA' } = customerInfo;
+  const { 
+    name = 'Client BEVULTA', 
+    email = 'client@bevulta.com', 
+    phone = '',
+    orderId = 'CMD-BEVULTA' 
+  } = customerInfo;
   const dateStr = formatDate();
 
   let pdfDoc = null;
@@ -480,6 +507,7 @@ export async function downloadWatermarkedPdf(ebook, customerInfo = {}) {
         await stampPdfWithWatermark(pdfDoc, {
           clientName: name,
           clientEmail: email,
+          clientPhone: phone,
           orderId,
           dateStr,
           websiteUrl: 'bevulta.vercel.app'
@@ -495,6 +523,7 @@ export async function downloadWatermarkedPdf(ebook, customerInfo = {}) {
     pdfDoc = await createBrandedEbookPdf(ebook, {
       name,
       email,
+      phone,
       orderId
     });
   }

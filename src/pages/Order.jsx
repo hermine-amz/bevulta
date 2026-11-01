@@ -3,6 +3,8 @@ import { ShoppingCart, Plus, Minus, Trash2, ShieldCheck, CheckCircle, FileText, 
 import { initiatePayment } from '../services/paymentService';
 import { downloadWatermarkedPdf } from '../services/pdfWatermarkService';
 import PaymentModal from '../components/PaymentModal';
+import PhoneInputWithCountry from '../components/PhoneInputWithCountry';
+import CountrySelect from '../components/CountrySelect';
 import { t } from '../data/translations';
 
 export default function Order({ cart, updateQty, removeFromCart, clearCart, onSubmitOrder, lang, showAlert, settings = {} }) {
@@ -13,7 +15,7 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
     email: '',
     phone: '',
     company: '',
-    country: 'benin',
+    country: 'Bénin',
     address: '',
     notes: ''
   });
@@ -29,12 +31,13 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
       await downloadWatermarkedPdf(item, {
         name: createdOrder?.clientName || 'Client BEVULTA',
         email: createdOrder?.email || 'client@bevulta.com',
+        phone: createdOrder?.phone || '',
         orderId: createdOrder?.id || 'CMD-BEVULTA'
       });
       showAlert(
         lang === 'fr'
-          ? `L'e-book "${item.name}" a été téléchargé avec votre tatouage numérique personnalisé !`
-          : `E-book "${item.name}" downloaded with your personal security watermark!`
+          ? `Téléchargement de "${item.name}" terminé !`
+          : `E-book "${item.name}" downloaded!`
       );
     } catch (err) {
       console.error("Ebook download error:", err);
@@ -69,25 +72,8 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
     });
   };
 
-  const countries = lang === 'fr' ? [
-    { value: 'benin', label: 'Bénin' },
-    { value: 'togo', label: 'Togo' },
-    { value: 'burkina', label: 'Burkina Faso' },
-    { value: 'niger', label: 'Niger' },
-    { value: 'cotedivoire', label: 'Côte d\'Ivoire' },
-    { value: 'other', label: 'Autre sous-région' }
-  ] : [
-    { value: 'benin', label: 'Benin' },
-    { value: 'togo', label: 'Togo' },
-    { value: 'burkina', label: 'Burkina Faso' },
-    { value: 'niger', label: 'Niger' },
-    { value: 'cotedivoire', label: 'Ivory Coast' },
-    { value: 'other', label: 'Other sub-region' }
-  ];
-
   const getCountryLabel = (value) => {
-    const matched = countries.find(c => c.value === value);
-    return matched ? matched.label : value;
+    return value || (isEn ? 'Benin' : 'Bénin');
   };
 
   const getSubtotal = () => {
@@ -100,10 +86,6 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
     } else {
       updateQty(id, newQty);
     }
-  };
-
-  const handleCountryChange = (e) => {
-    setFormData({ ...formData, country: e.target.value });
   };
 
   const handleSubmit = (e) => {
@@ -230,12 +212,12 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
                 </div>
                 <div>
                   <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#1e3a8a' }}>
-                    {isEn ? "Direct E-Book Downloads (Secured & Watermarked)" : "Téléchargement Direct de vos E-books (Sécurisés & Tatoués)"}
+                    {isEn ? "Direct E-Book Downloads" : "Téléchargement de vos E-books & Guides"}
                   </h4>
                   <span style={{ fontSize: '0.82rem', color: '#4b5563' }}>
                     {isEn 
-                      ? `Personalized anti-sharing copy stamped for ${createdOrder.clientName} (${createdOrder.email})`
-                      : `Exemplaire certifié anti-partage gravé au nom de ${createdOrder.clientName} (${createdOrder.email})`}
+                      ? "Your digital guides are ready for download."
+                      : "Vos manuels numériques officiels sont prêts au format PDF haute définition."}
                   </span>
                 </div>
               </div>
@@ -258,7 +240,7 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
                         📖 {item.name}
                       </div>
                       <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
-                        Format : {item.format || 'PDF Haute Définition'} • Filigrane anti-partage actif
+                        Format : {item.format || 'PDF Haute Définition'}
                       </div>
                     </div>
                     <button
@@ -284,8 +266,8 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
                       <Download size={16} />
                       <span>
                         {downloadingEbookId === item.id 
-                          ? (isEn ? "Generating..." : "Tatouage & Téléchargement...") 
-                          : (isEn ? "Download PDF" : "Télécharger directement")}
+                          ? (isEn ? "Preparing PDF..." : "Préparation du PDF...") 
+                          : (isEn ? "Download (PDF)" : "Télécharger (PDF)")}
                       </span>
                     </button>
                   </div>
@@ -597,13 +579,12 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
 
           <div className="form-group">
             <label className="form-label">{t('orderClientPhone', lang)}</label>
-            <input
-              type="tel"
-              className="form-input"
-              placeholder="Ex: +229 97..."
-              required
+            <PhoneInputWithCountry
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(fullPhone) => setFormData({ ...formData, phone: fullPhone })}
+              lang={lang}
+              required
+              placeholder={isEn ? "Phone / WhatsApp" : "Numéro de téléphone / WhatsApp"}
             />
           </div>
 
@@ -631,15 +612,12 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
 
           <div className="form-group">
             <label className="form-label">{t('orderClientCountry', lang)}</label>
-            <select
-              className="form-input"
+            <CountrySelect
               value={formData.country}
-              onChange={handleCountryChange}
-            >
-              {countries.map(c => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </select>
+              onChange={(countryName) => setFormData({ ...formData, country: countryName })}
+              lang={lang}
+              required
+            />
           </div>
 
           <div className="form-group">

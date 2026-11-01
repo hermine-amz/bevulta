@@ -15,6 +15,7 @@ import {
   Lock
 } from 'lucide-react';
 import { downloadWatermarkedPdf } from '../services/pdfWatermarkService';
+import PhoneInputWithCountry from './PhoneInputWithCountry';
 
 export default function PaymentModal({
   isOpen,
@@ -47,7 +48,7 @@ export default function PaymentModal({
       setDownloadSuccess(false);
 
       const isEbook = Boolean(paymentData.isEbook || paymentData.type === 'ebook' || paymentData.ebook || paymentData.item?.isEbook);
-      const needsInfoFirst = isEbook && (!name.trim() || !email.trim());
+      const needsInfoFirst = isEbook && (!name.trim() || !email.trim() || !phone.trim());
       setStep(needsInfoFirst ? 'form' : 'payment');
     }
   }, [paymentData]);
@@ -78,13 +79,17 @@ export default function PaymentModal({
       setFormError(isEn ? "Please enter a valid email address." : "Veuillez entrer une adresse e-mail valide.");
       return;
     }
+    if (!buyerPhone.trim() || buyerPhone.trim().length < 6) {
+      setFormError(isEn ? "Please enter your Mobile Money phone number." : "Veuillez entrer votre numéro de téléphone / Mobile Money.");
+      return;
+    }
     setFormError('');
     setStep('payment');
   };
 
   const handleWhatsAppConfirmation = () => {
     const text = encodeURIComponent(
-      `Bonjour BEVULTA, je viens d'effectuer le paiement de ${amountFcfa?.toLocaleString()} FCFA pour "${itemTitle}" au nom de ${buyerName || 'Client'} (${buyerEmail || 'Email non précisé'}) (Réf: ${orderId}). Pouvez-vous valider ma commande ? Merci.`
+      `Bonjour BEVULTA, je viens d'effectuer le paiement de ${amountFcfa?.toLocaleString()} FCFA pour "${itemTitle}" au nom de ${buyerName || 'Client'} (${buyerEmail || 'Email non précisé'}, Tél: ${buyerPhone}) (Réf: ${orderId}). Pouvez-vous valider ma commande ? Merci.`
     );
     window.open(`https://wa.me/${whatsappNumber}?text=${text}`, '_blank');
     if (onConfirmPayment) onConfirmPayment();
@@ -111,6 +116,7 @@ export default function PaymentModal({
       await downloadWatermarkedPdf(targetEbook, {
         name: buyerName || 'Client BEVULTA',
         email: buyerEmail || 'client@bevulta.com',
+        phone: buyerPhone || '',
         orderId: orderId || 'CMD-BEVULTA'
       });
       setDownloadSuccess(true);
@@ -149,14 +155,14 @@ export default function PaymentModal({
             <div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
                 {step === 'download' 
-                  ? (isEn ? "Ready for Download!" : "Téléchargement Immédiat")
+                  ? (isEn ? "Your E-book is Ready!" : "Votre Guide est Prêt !")
                   : isEbookPurchase 
-                    ? (isEn ? "E-book Purchase & License" : "Achat E-book & Licence Personnelle")
+                    ? (isEn ? "E-book Order" : "Commande de l'E-book")
                     : (isEn ? "Mobile Money Payment" : "Règlement Mobile Money")}
               </h3>
               <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
                 {step === 'download'
-                  ? (isEn ? "Secured with your personal watermark" : "Tatouage numérique anti-partage appliqué")
+                  ? (isEn ? "Format: High Definition PDF" : "Format : PDF Haute Définition")
                   : (momoOperator + ' • Réf: ' + orderId)}
               </span>
             </div>
@@ -170,15 +176,11 @@ export default function PaymentModal({
           </button>
         </div>
 
-        {/* STEP 1: CUSTOMER INFO (Required for Ebook Anti-sharing Watermark) */}
+        {/* STEP 1: CUSTOMER INFO */}
         {step === 'form' && (
           <form onSubmit={handleValidateInfo} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px', fontSize: '0.82rem', color: '#166534', lineHeight: 1.4, display: 'flex', gap: '10px' }}>
-              <Lock size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
-              <div>
-                <strong>Sécurité anti-partage & Licence d'utilisation :</strong>
-                <div>Votre nom et votre adresse e-mail seront gravés en filigrane permanent sur votre exemplaire officiel pour protéger vos droits d'accès.</div>
-              </div>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', fontSize: '0.84rem', color: '#334155', lineHeight: 1.4 }}>
+              Renseignez vos coordonnées pour recevoir votre confirmation et accéder immédiatement au téléchargement de votre guide.
             </div>
 
             {formError && (
@@ -189,7 +191,7 @@ export default function PaymentModal({
 
             <div>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                {isEn ? "Full Name (for your license certificate) *" : "Nom & Prénom de l'acquéreur *"}
+                {isEn ? "Full Name *" : "Nom & Prénom *"}
               </label>
               <div style={{ position: 'relative' }}>
                 <User size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#94a3b8' }} />
@@ -206,7 +208,7 @@ export default function PaymentModal({
 
             <div>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                {isEn ? "Email Address (for download & anti-piracy stamp) *" : "Adresse E-mail (pour le tatouage et la copie) *"}
+                {isEn ? "Email Address (for receipt & download) *" : "Adresse E-mail (pour votre reçu et téléchargement) *"}
               </label>
               <div style={{ position: 'relative' }}>
                 <Mail size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#94a3b8' }} />
@@ -223,18 +225,15 @@ export default function PaymentModal({
 
             <div>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                {isEn ? "Phone / WhatsApp (Optional)" : "Numéro WhatsApp / Téléphone"}
+                {isEn ? "Mobile Money / WhatsApp Phone Number *" : "Numéro Mobile Money / WhatsApp *"}
               </label>
-              <div style={{ position: 'relative' }}>
-                <Phone size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#94a3b8' }} />
-                <input
-                  type="tel"
-                  value={buyerPhone}
-                  onChange={(e) => setBuyerPhone(e.target.value)}
-                  placeholder="Ex: +229 97 00 00 00"
-                  style={{ width: '100%', padding: '12px 14px 12px 38px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
-                />
-              </div>
+              <PhoneInputWithCountry
+                value={buyerPhone}
+                onChange={(full) => setBuyerPhone(full)}
+                lang={lang}
+                required
+                placeholder={isEn ? "Phone / WhatsApp" : "Numéro Mobile Money / WhatsApp"}
+              />
             </div>
 
             <button
@@ -402,34 +401,33 @@ export default function PaymentModal({
             </div>
 
             <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
-              {isEn ? "Payment Recorded Successfully!" : "Paiement Enregistré avec Succès !"}
+              {isEn ? "Payment Successfully Recorded!" : "Paiement Enregistré avec Succès !"}
             </h4>
 
             <p style={{ fontSize: '0.88rem', color: '#64748b', marginBottom: '20px', lineHeight: 1.5 }}>
-              Votre exemplaire officiel a été certifié avec vos informations de licence et tatoué numériquement contre le partage non autorisé.
+              {isEn 
+                ? "Thank you for your purchase! You can download your official guide below." 
+                : "Merci pour votre achat ! Votre guide est prêt, vous pouvez le télécharger dès maintenant."}
             </p>
 
-            {/* Security Certificate Card */}
+            {/* Order Recap Card */}
             <div style={{
               background: '#f8fafc',
-              border: '1px solid #cbd5e1',
+              border: '1px solid #e2e8f0',
               borderRadius: '14px',
-              padding: '16px',
+              padding: '16px 20px',
               textAlign: 'left',
-              fontSize: '0.82rem',
+              fontSize: '0.85rem',
               marginBottom: '24px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 800, marginBottom: '8px' }}>
-                <Lock size={16} />
-                <span>Protection Anti-Partage Appliquée :</span>
+              <div style={{ color: '#0f172a', fontWeight: 800, marginBottom: '8px' }}>
+                {isEn ? "Order Summary :" : "Récapitulatif de votre commande :"}
               </div>
               <div style={{ color: '#334155', lineHeight: 1.6 }}>
-                <div>• Titulaire : <strong>{buyerName || 'Client BEVULTA'}</strong></div>
-                <div>• E-mail gravé : <strong>{buyerEmail || 'client@bevulta.com'}</strong></div>
-                <div>• Référence d'achat : <strong>{orderId}</strong></div>
-                <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '6px' }}>
-                  Un filigrane diagonal avec votre e-mail et date est apposé sur chaque page du PDF.
-                </div>
+                <div>• Article : <strong>{itemTitle}</strong></div>
+                <div>• Client : <strong>{buyerName}</strong></div>
+                <div>• Email : <strong>{buyerEmail}</strong></div>
+                <div>• Référence : <strong>{orderId}</strong></div>
               </div>
             </div>
 
@@ -462,10 +460,10 @@ export default function PaymentModal({
               <Download size={20} />
               <span>
                 {downloading 
-                  ? (isEn ? "Stamping and generating PDF..." : "Tatouage numérique & génération...")
+                  ? (isEn ? "Preparing PDF file..." : "Préparation du fichier PDF...")
                   : downloadSuccess
                     ? (isEn ? "Re-download E-book (PDF)" : "Télécharger à nouveau (PDF)")
-                    : (isEn ? "Download My Secured E-book (PDF)" : "Télécharger mon E-book sécurisé (PDF)")
+                    : (isEn ? "Download My E-book (PDF)" : "Télécharger mon E-book (PDF)")
                 }
               </span>
             </button>

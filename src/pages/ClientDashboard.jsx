@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  User, FileText, Settings, LogOut, Clock, Wrench, Truck, CheckCircle2, MessageSquare, Home
+  User, FileText, LogOut, Clock, Wrench, Truck, CheckCircle2, MessageSquare, Home
 } from 'lucide-react';
+import PhoneInputWithCountry from '../components/PhoneInputWithCountry';
+import CountrySelect from '../components/CountrySelect';
 import { t } from '../data/translations';
 
 export default function ClientDashboard({ 
@@ -411,11 +413,10 @@ export default function ClientDashboard({
                   <div className="crud-grid" style={{ marginBottom: '16px' }}>
                     <div className="form-group">
                       <label className="form-label">{lang === 'fr' ? 'Téléphone' : 'Phone'}</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
+                      <PhoneInputWithCountry 
                         value={profileForm.phone} 
-                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} 
+                        onChange={(fullPhone) => setProfileForm({ ...profileForm, phone: fullPhone })}
+                        lang={lang}
                       />
                     </div>
                     <div className="form-group">
@@ -431,11 +432,10 @@ export default function ClientDashboard({
 
                   <div className="form-group" style={{ marginBottom: '16px' }}>
                     <label className="form-label">{lang === 'fr' ? 'Pays de livraison' : 'Shipping Country'}</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      value={profileForm.country} 
-                      onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })} 
+                    <CountrySelect
+                      value={profileForm.country}
+                      onChange={(countryName) => setProfileForm({ ...profileForm, country: countryName })}
+                      lang={lang}
                     />
                   </div>
 

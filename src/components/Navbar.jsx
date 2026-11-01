@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, LayoutDashboard, Menu, X, Sun, Moon, Globe, Phone } from 'lucide-react';
 import { t } from '../data/translations';
 
@@ -13,6 +13,19 @@ export default function Navbar({
   setTheme 
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isEn = lang === 'en';
+
+  // Prevent background scroll when mobile drawer is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMenuOpen]);
 
   const links = [
     { id: 'home', label: lang === 'fr' ? 'ACCUEIL' : 'HOME' },
@@ -33,7 +46,7 @@ export default function Navbar({
         setCurrentPage('client-dashboard');
       }
     } else {
-      setCurrentPage('login'); // Redirect to unified login page
+      setCurrentPage('login');
     }
     setIsMenuOpen(false);
   };
@@ -51,6 +64,7 @@ export default function Navbar({
   return (
     <nav className="navbar">
       <div className="nav-container">
+        {/* Brand Logo */}
         <a 
           href="#home" 
           className="logo"
@@ -60,11 +74,11 @@ export default function Navbar({
           <img 
             src="/logo.jpg" 
             alt="BEVULTA" 
-            style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)' }} 
+            style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)' }} 
           />
         </a>
 
-        {/* Desktop Navigation Menu */}
+        {/* Desktop Navigation Menu (hidden on screens <= 1220px) */}
         <div className="nav-menu">
           {links.map((link) => (
             <a
@@ -88,9 +102,9 @@ export default function Navbar({
           ))}
         </div>
 
-        {/* Desktop CTA & Controls Buttons */}
+        {/* Desktop Controls (hidden on screens <= 1220px) */}
         <div className="nav-cta" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Custom sliding theme switch (interrupteur) */}
+          {/* Theme switch toggle */}
           <button 
             onClick={toggleTheme} 
             title={theme === 'light' ? (lang === 'fr' ? 'Activer le mode sombre' : 'Switch to dark mode') : (lang === 'fr' ? 'Activer le mode clair' : 'Switch to light mode')}
@@ -110,7 +124,6 @@ export default function Navbar({
               marginRight: '2px'
             }}
           >
-            {/* Faint background icons */}
             <div style={{
               position: 'absolute',
               width: '100%',
@@ -129,7 +142,6 @@ export default function Navbar({
               <Moon size={10} color={theme === 'light' ? 'var(--secondary)' : '#ffffff'} />
             </div>
 
-            {/* Sliding knob */}
             <div
               style={{
                 width: '20px',
@@ -150,38 +162,19 @@ export default function Navbar({
             </div>
           </button>
           
-          {/* Language Switcher with Circular SVG Flags */}
+          {/* Language Switcher */}
           <button 
             onClick={toggleLang} 
             className="lang-toggle" 
             title={lang === 'fr' ? 'English' : 'Français'}
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            {lang === 'fr' ? (
-              <svg viewBox="0 0 36 36" width="16" height="16" style={{ borderRadius: '50%', flexShrink: 0, boxShadow: '0 0 0 1px rgba(0,0,0,0.1)' }}>
-                <path d="M0 0h12v36H0z" fill="#002395"/>
-                <path d="M12 0h12v36H12z" fill="#fff"/>
-                <path d="M24 0h12v36H24z" fill="#ed2939"/>
-              </svg>
-            ) : (
-              <svg viewBox="0 0 36 36" width="16" height="16" style={{ borderRadius: '50%', flexShrink: 0, boxShadow: '0 0 0 1px rgba(0,0,0,0.1)' }}>
-                <path d="M0 0h36v36H0z" fill="#fff"/>
-                <path d="M0 2h36v3H0zm0 6h36v3H0zm0 6h36v3H0zm0 6h36v3H0zm0 6h36v3H0zm0 6h36v3H0z" fill="#b22234"/>
-                <path d="M0 0h16v16H0z" fill="#3c3b6e"/>
-                <g fill="#fff">
-                  <circle cx="3" cy="3" r="0.8"/><circle cx="7" cy="3" r="0.8"/><circle cx="11" cy="3" r="0.8"/><circle cx="15" cy="3" r="0.8"/>
-                  <circle cx="5" cy="6" r="0.8"/><circle cx="9" cy="6" r="0.8"/><circle cx="13" cy="6" r="0.8"/>
-                  <circle cx="3" cy="9" r="0.8"/><circle cx="7" cy="9" r="0.8"/><circle cx="11" cy="9" r="0.8"/><circle cx="15" cy="9" r="0.8"/>
-                  <circle cx="5" cy="12" r="0.8"/><circle cx="9" cy="12" r="0.8"/><circle cx="13" cy="12" r="0.8"/>
-                </g>
-              </svg>
-            )}
             <span style={{ fontSize: '0.74rem', fontWeight: '800' }}>
               {lang === 'fr' ? 'FR' : 'EN'}
             </span>
           </button>
 
-          {/* Devis (Cart) Link - Icon Only */}
+          {/* Cart Icon */}
           <a
             href="#order"
             className="theme-toggle"
@@ -192,18 +185,18 @@ export default function Navbar({
             }}
             title={lang === 'fr' ? 'Mon Devis' : 'My Quotation'}
           >
-            <ShoppingCart size={15} />
+            <ShoppingCart size={16} />
             {cartCount > 0 && (
               <span style={{
                 position: 'absolute',
                 top: '-4px',
                 right: '-4px',
-                backgroundColor: 'var(--accent-orange)',
+                backgroundColor: 'var(--accent-orange, #ea580c)',
                 color: 'white',
                 borderRadius: '50%',
-                width: '14px',
-                height: '14px',
-                fontSize: '0.6rem',
+                width: '15px',
+                height: '15px',
+                fontSize: '0.62rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -214,7 +207,7 @@ export default function Navbar({
             )}
           </a>
 
-          {/* Green Bordered Dashboard Access */}
+          {/* Mon Espace Link */}
           <a
             href="#login"
             className="btn-space"
@@ -226,97 +219,194 @@ export default function Navbar({
           </a>
         </div>
 
-        {/* Mobile Menu Hamburger Toggle Button */}
-        <button 
-          className="mobile-menu-btn"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        {/* Mobile Quick Action Buttons (ALWAYS visible on Mobile & Tablet <= 1220px) */}
+        <div className="mobile-quick-bar">
+          {/* Always accessible Cart Icon with Badge on mobile */}
+          <a
+            href="#order"
+            className="mobile-quick-btn"
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentPage('order');
+              setIsMenuOpen(false);
+            }}
+            title={lang === 'fr' ? 'Mon Devis' : 'My Quotation'}
+          >
+            <ShoppingCart size={18} />
+            {cartCount > 0 && (
+              <span className="mobile-cart-badge">
+                {cartCount}
+              </span>
+            )}
+          </a>
+
+          {/* Language toggle on mobile */}
+          <button
+            type="button"
+            onClick={toggleLang}
+            className="mobile-quick-btn"
+            title={lang === 'fr' ? 'Passer en Anglais' : 'Switch to French'}
+          >
+            <span style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+              {lang === 'fr' ? 'FR' : 'EN'}
+            </span>
+          </button>
+
+          {/* Mobile Menu Hamburger Button */}
+          <button 
+            type="button"
+            className="mobile-menu-btn"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </div>
 
-      {/* Mobile Glassmorphic Navigation Menu Dropdown */}
+      {/* Mobile Drawer (Zero Button Clipping, Responsive & Touch-friendly) */}
       {isMenuOpen && (
-        <div className="mobile-nav-menu" style={{ backgroundColor: 'var(--bg-card)' }}>
-          {links.map((link) => (
-            <a
-              key={link.id}
-              href={`#${link.id}`}
-              className={`mobile-nav-link ${currentPage === link.id ? 'active' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                setCurrentPage(link.id);
-                setIsMenuOpen(false);
-              }}
-            >
-              {link.label}
-            </a>
-          ))}
-          
-          {/* Mobile Theme & Language Controls in Hamburger Menu */}
-          <div style={{ display: 'flex', gap: '12px', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-            <button 
-              onClick={toggleTheme} 
-              className="btn btn-outline" 
-              style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-            >
-              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-              <span>{theme === 'light' ? (lang === 'fr' ? 'Sombre' : 'Dark') : (lang === 'fr' ? 'Clair' : 'Light')}</span>
-            </button>
-            <button 
-              onClick={toggleLang} 
-              className="btn btn-outline"
-              style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-            >
-              <Globe size={18} />
-              <span>{lang === 'fr' ? 'English (EN)' : 'Français (FR)'}</span>
-            </button>
-          </div>
+        <div className="mobile-nav-overlay" onClick={() => setIsMenuOpen(false)}>
+          <div 
+            className="mobile-nav-drawer" 
+            onClick={(e) => e.stopPropagation()}
+            style={{ backgroundColor: 'var(--bg-card)' }}
+          >
+            {/* Drawer Header */}
+            <div className="mobile-drawer-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img src="/logo.jpg" alt="BEVULTA" style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: '1.1rem', color: 'var(--secondary)' }}>BEVULTA</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Machines Agricoles & E-books</div>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsMenuOpen(false)}
+                className="mobile-drawer-close"
+                aria-label="Close menu"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-          <div className="mobile-nav-cta">
-            <a
-              href="#order"
-              className="btn btn-outline"
-              style={{ position: 'relative', width: '100%' }}
-              onClick={(e) => {
-                e.preventDefault();
-                setCurrentPage('order');
-                setIsMenuOpen(false);
-              }}
-            >
-              <ShoppingCart size={18} />
-              <span>{t('navDevis', lang)}</span>
-              {cartCount > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: '-8px',
-                  right: '-8px',
-                  backgroundColor: 'var(--accent-orange)',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
-                  fontSize: '0.75rem',
+            {/* Navigation Links List */}
+            <div className="mobile-drawer-links">
+              {links.map((link) => (
+                <a
+                  key={link.id}
+                  href={`#${link.id}`}
+                  className={`mobile-nav-link ${currentPage === link.id ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (link.id === 'formations') {
+                      setCurrentPage('home');
+                      setTimeout(() => {
+                        document.getElementById('pillars-section')?.scrollIntoView({ behavior: 'smooth' });
+                      }, 100);
+                    } else {
+                      setCurrentPage(link.id);
+                    }
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  <span>{link.label}</span>
+                  {link.id === 'ebooks' && (
+                    <span style={{ 
+                      fontSize: '0.65rem', 
+                      background: 'linear-gradient(135deg, #d97706, #b45309)', 
+                      color: '#ffffff', 
+                      padding: '2px 8px', 
+                      borderRadius: '10px', 
+                      fontWeight: 800,
+                      marginLeft: 'auto'
+                    }}>
+                      {isEn ? "NEW" : "NOUVEAU"}
+                    </span>
+                  )}
+                </a>
+              ))}
+            </div>
+
+            {/* Mobile Drawer Footer with Full Actions */}
+            <div className="mobile-drawer-footer">
+              {/* Theme & Language row */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                <button 
+                  type="button"
+                  onClick={toggleTheme} 
+                  className="btn btn-outline" 
+                  style={{ flex: 1, padding: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
+                >
+                  {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                  <span>{theme === 'light' ? (lang === 'fr' ? 'Sombre' : 'Dark') : (lang === 'fr' ? 'Clair' : 'Light')}</span>
+                </button>
+                <button 
+                  type="button"
+                  onClick={toggleLang} 
+                  className="btn btn-outline"
+                  style={{ flex: 1, padding: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
+                >
+                  <Globe size={16} />
+                  <span>{lang === 'fr' ? 'English (EN)' : 'Français (FR)'}</span>
+                </button>
+              </div>
+
+              {/* Mon Devis Main Button */}
+              <a
+                href="#order"
+                className="btn btn-primary"
+                style={{ width: '100%', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '12px 16px' }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentPage('order');
+                  setIsMenuOpen(false);
+                }}
+              >
+                <ShoppingCart size={18} />
+                <span style={{ fontWeight: 700 }}>
+                  {lang === 'fr' ? `Accéder à mon Devis (${cartCount})` : `View Quotation (${cartCount})`}
+                </span>
+              </a>
+
+              {/* Mon Espace Button */}
+              <a
+                href="#login"
+                className="btn btn-outline"
+                style={{ width: '100%', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '12px 16px' }}
+                onClick={handleAuthClick}
+              >
+                <LayoutDashboard size={18} />
+                <span style={{ fontWeight: 700 }}>
+                  {user ? t('navMySpace', lang) : t('navConnect', lang)}
+                </span>
+              </a>
+
+              {/* Direct WhatsApp hotline */}
+              <a
+                href="https://wa.me/22997699178?text=Bonjour%20BEVULTA,%20je%20souhaite%20des%20informations"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontWeight: 'bold'
-                }}>
-                  {cartCount}
-                </span>
-              )}
-            </a>
+                  gap: '8px',
+                  padding: '10px',
+                  borderRadius: '10px',
+                  background: 'rgba(22, 163, 74, 0.1)',
+                  color: '#166534',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  textDecoration: 'none'
+                }}
+              >
+                <Phone size={14} />
+                <span>Atelier WhatsApp : (+229) 97 69 91 78</span>
+              </a>
+            </div>
 
-            <a
-              href="#login"
-              className="btn btn-primary"
-              style={{ width: '100%' }}
-              onClick={handleAuthClick}
-            >
-              <LayoutDashboard size={18} />
-              <span>{user ? t('navMySpace', lang) : t('navConnect', lang)}</span>
-            </a>
           </div>
         </div>
       )}
