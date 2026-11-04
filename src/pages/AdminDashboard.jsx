@@ -335,8 +335,18 @@ export default function AdminDashboard({
 
   const handleSaveSettings = (e) => {
     e.preventDefault();
-    updateSettings(settingsForm);
-    showAlert(isEn ? "Settings updated successfully!" : "Paramètres mis à jour avec succès !");
+    if (showConfirm) {
+      showConfirm(
+        isEn ? "Do you want to save the new store settings?" : "Voulez-vous enregistrer les modifications apportées aux paramètres de la boutique ?",
+        () => {
+          updateSettings(settingsForm);
+          showAlert(isEn ? "Settings updated successfully!" : "Paramètres mis à jour avec succès !");
+        }
+      );
+    } else {
+      updateSettings(settingsForm);
+      showAlert(isEn ? "Settings updated successfully!" : "Paramètres mis à jour avec succès !");
+    }
   };
 
   const getStatusLabel = (status) => {
@@ -1330,6 +1340,7 @@ export default function AdminDashboard({
                 updateSettings={updateSettings}
                 lang={lang}
                 showAlert={showAlert}
+                showConfirm={showConfirm}
               />
             </div>
           )}
@@ -2837,8 +2848,28 @@ export default function AdminDashboard({
                   style={{ fontWeight: 'bold', color: 'var(--primary)', flex: '1 1 200px' }}
                   value={viewingOrder.status}
                   onChange={(e) => {
-                    updateOrderStatus(viewingOrder.id, e.target.value);
-                    setViewingOrder({ ...viewingOrder, status: e.target.value });
+                    const newStatus = e.target.value;
+                    const statusLabels = {
+                      pending: isEn ? "Awaiting Payment" : "En attente / Validation de paiement",
+                      manufacturing: isEn ? "In Manufacturing" : "En cours de fabrication",
+                      shipped: isEn ? "Shipped" : "Expédié",
+                      delivered: isEn ? "Delivered" : "Livré"
+                    };
+                    if (showConfirm) {
+                      showConfirm(
+                        isEn 
+                          ? `Are you sure you want to change order #${viewingOrder.id} status to "${statusLabels[newStatus] || newStatus}"?`
+                          : `Confirmez-vous le changement de statut de la commande N° ${viewingOrder.id} vers "${statusLabels[newStatus] || newStatus}" ?`,
+                        () => {
+                          updateOrderStatus(viewingOrder.id, newStatus);
+                          setViewingOrder({ ...viewingOrder, status: newStatus });
+                          showAlert(isEn ? "Order status updated." : "Statut de la commande mis à jour.");
+                        }
+                      );
+                    } else {
+                      updateOrderStatus(viewingOrder.id, newStatus);
+                      setViewingOrder({ ...viewingOrder, status: newStatus });
+                    }
                   }}
                 >
                   <option value="pending">{isEn ? "Awaiting Payment Validation" : "En attente / Validation de paiement"}</option>
@@ -3104,6 +3135,8 @@ export default function AdminDashboard({
           onCancel={() => { setShowEbookEditor(false); setEditingEbook(null); }}
           allEbooks={ebooks}
           lang={lang}
+          showAlert={showAlert}
+          showConfirm={showConfirm}
         />
       )}
     </div>

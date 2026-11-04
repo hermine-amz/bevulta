@@ -58,15 +58,33 @@ export default function LandingPageEditor({
 
   const handleSave = async (e) => {
     if (e) e.preventDefault();
-    setIsSaving(true);
-    try {
-      await updateSettings(formData);
-      showAlert(isEn ? "Landing page updated successfully!" : "Page d'accueil mise à jour avec succès !");
-    } catch (err) {
-      console.error("Save error:", err);
-      showAlert(isEn ? "Failed to save settings." : "Erreur lors de l'enregistrement des modifications.");
-    } finally {
-      setIsSaving(false);
+    if (showConfirm) {
+      showConfirm(
+        isEn ? "Do you want to apply these changes to the landing page?" : "Voulez-vous enregistrer et publier ces modifications sur la page d'accueil ?",
+        async () => {
+          setIsSaving(true);
+          try {
+            await updateSettings(formData);
+            showAlert(isEn ? "Landing page updated successfully!" : "Page d'accueil mise à jour avec succès !");
+          } catch (err) {
+            console.error("Save error:", err);
+            showAlert(isEn ? "Failed to save settings." : "Erreur lors de l'enregistrement des modifications.");
+          } finally {
+            setIsSaving(false);
+          }
+        }
+      );
+    } else {
+      setIsSaving(true);
+      try {
+        await updateSettings(formData);
+        showAlert(isEn ? "Landing page updated successfully!" : "Page d'accueil mise à jour avec succès !");
+      } catch (err) {
+        console.error("Save error:", err);
+        showAlert(isEn ? "Failed to save settings." : "Erreur lors de l'enregistrement des modifications.");
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 

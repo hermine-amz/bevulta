@@ -104,11 +104,24 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
     return cart.reduce((total, item) => total + (item.priceFcfa * item.quantity), 0);
   };
 
-  const handleQtyChange = (id, newQty) => {
+  const handleQtyChange = (id, newQty, itemName) => {
     if (newQty <= 0) {
-      removeFromCart(id);
+      handleRemoveItem(id, itemName);
     } else {
       updateQty(id, newQty);
+    }
+  };
+
+  const handleRemoveItem = (id, itemName) => {
+    if (showConfirm) {
+      showConfirm(
+        lang === 'fr' 
+          ? `Voulez-vous retirer "${itemName || 'cet article'}" de votre devis ?` 
+          : `Do you want to remove "${itemName || 'this item'}" from your quote?`,
+        () => removeFromCart(id)
+      );
+    } else {
+      removeFromCart(id);
     }
   };
 
@@ -677,11 +690,11 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
 
                   <div className="order-item-actions">
                     <div className="order-item-qty">
-                      <button type="button" onClick={() => handleQtyChange(item.id, item.quantity - 1)} aria-label="Diminuer">
+                      <button type="button" onClick={() => handleQtyChange(item.id, item.quantity - 1, item.name)} aria-label="Diminuer">
                         <Minus size={14} />
                       </button>
                       <span className="order-qty-count">{item.quantity}</span>
-                      <button type="button" onClick={() => handleQtyChange(item.id, item.quantity + 1)} aria-label="Augmenter">
+                      <button type="button" onClick={() => handleQtyChange(item.id, item.quantity + 1, item.name)} aria-label="Augmenter">
                         <Plus size={14} />
                       </button>
                     </div>
@@ -689,7 +702,7 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
                     <button 
                       type="button"
                       className="order-item-remove-btn"
-                      onClick={() => removeFromCart(item.id)}
+                      onClick={() => handleRemoveItem(item.id, item.name)}
                       title={isEn ? "Remove" : "Retirer"}
                     >
                       <Trash2 size={16} />

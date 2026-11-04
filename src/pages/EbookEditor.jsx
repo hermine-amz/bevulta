@@ -29,7 +29,7 @@ const PRESET_COVERS = [
   { label: "Construction BTP", url: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=700" }
 ];
 
-export default function EbookEditor({ ebook, onSave, onCancel, allEbooks = [], lang = 'fr' }) {
+export default function EbookEditor({ ebook, onSave, onCancel, allEbooks = [], lang = 'fr', showConfirm, showAlert }) {
   const isEn = lang === 'en';
 
   // Form State
@@ -115,7 +115,8 @@ export default function EbookEditor({ ebook, onSave, onCancel, allEbooks = [], l
   const handleSubmit = (e) => {
     if (e) e.preventDefault();
     if (!title.trim()) {
-      alert(isEn ? "Please enter a title." : "Veuillez saisir un titre.");
+      if (showAlert) showAlert(isEn ? "Please enter a title." : "Veuillez saisir un titre.");
+      else alert(isEn ? "Please enter a title." : "Veuillez saisir un titre.");
       return;
     }
 
@@ -142,7 +143,27 @@ export default function EbookEditor({ ebook, onSave, onCancel, allEbooks = [], l
       featured
     };
 
-    onSave(payload);
+    if (showConfirm) {
+      showConfirm(
+        isEn 
+          ? (ebook ? "Do you want to save modifications to this e-book / pack?" : "Do you want to publish this new e-book / pack?")
+          : (ebook ? "Voulez-vous enregistrer les modifications apportées à cet e-book / pack ?" : "Voulez-vous publier ce nouvel e-book / pack ?"),
+        () => onSave(payload)
+      );
+    } else {
+      onSave(payload);
+    }
+  };
+
+  const handleCancelWithConfirm = () => {
+    if (showConfirm) {
+      showConfirm(
+        isEn ? "Are you sure you want to exit? Any unsaved changes will be lost." : "Voulez-vous vraiment quitter l'éditeur ? Les modifications non enregistrées seront perdues.",
+        onCancel
+      );
+    } else {
+      onCancel();
+    }
   };
 
   const handleCopyLink = () => {
@@ -191,7 +212,7 @@ export default function EbookEditor({ ebook, onSave, onCancel, allEbooks = [], l
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleCancelWithConfirm}
             title={isEn ? "Back" : "Retour"}
             style={{
               width: '36px',
@@ -336,7 +357,7 @@ export default function EbookEditor({ ebook, onSave, onCancel, allEbooks = [], l
                 </button>
                 <button
                   type="button"
-                  onClick={onCancel}
+                  onClick={handleCancelWithConfirm}
                   style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.84rem', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
                   <X size={14} />

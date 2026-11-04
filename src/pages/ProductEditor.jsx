@@ -347,11 +347,22 @@ export default function ProductEditor({ product, onSave, onCancel, lang = 'fr', 
 
     if (showConfirm) {
       showConfirm(
-        isEn ? "Do you want to publish these changes?" : "Voulez-vous publier ces modifications sur la boutique ?",
+        isEn ? "Do you want to publish these changes?" : "Voulez-vous enregistrer et publier ces modifications sur la boutique ?",
         () => onSave(payload)
       );
     } else {
       onSave(payload);
+    }
+  };
+
+  const handleCancelWithConfirm = () => {
+    if (showConfirm) {
+      showConfirm(
+        isEn ? "Are you sure you want to exit? Any unsaved changes will be lost." : "Voulez-vous vraiment quitter l'éditeur de produit ? Les modifications non enregistrées seront perdues.",
+        onCancel
+      );
+    } else {
+      onCancel();
     }
   };
 
@@ -400,7 +411,7 @@ export default function ProductEditor({ product, onSave, onCancel, lang = 'fr', 
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleCancelWithConfirm}
             title={isEn ? "Back" : "Retour"}
             style={{
               width: '36px',
@@ -545,7 +556,7 @@ export default function ProductEditor({ product, onSave, onCancel, lang = 'fr', 
                 </button>
                 <button
                   type="button"
-                  onClick={onCancel}
+                  onClick={handleCancelWithConfirm}
                   style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.84rem', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
                   <X size={14} />

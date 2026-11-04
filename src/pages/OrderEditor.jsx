@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Save, X, Plus, Trash2 } from 'lucide-react';
 
-export default function OrderEditor({ products, onSave, onClose, lang }) {
+export default function OrderEditor({ products, onSave, onClose, lang, showConfirm, showAlert }) {
   const isEn = lang === 'en';
   
   const [formData, setFormData] = useState({
@@ -44,7 +44,26 @@ export default function OrderEditor({ products, onSave, onClose, lang }) {
   };
 
   const removeItem = (index) => {
-    setOrderItems(prev => prev.filter((_, i) => i !== index));
+    const item = orderItems[index];
+    if (showConfirm && item.productName) {
+      showConfirm(
+        isEn ? `Remove "${item.productName}" from the order?` : `Retirer "${item.productName}" de la commande ?`,
+        () => setOrderItems(prev => prev.filter((_, i) => i !== index))
+      );
+    } else {
+      setOrderItems(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleCloseWithConfirm = () => {
+    if (showConfirm && (orderItems.some(i => i.productName.trim() !== '') || formData.clientName.trim() !== '')) {
+      showConfirm(
+        isEn ? "Are you sure you want to close? The draft will be discarded." : "Voulez-vous vraiment annuler la création de cette commande ?",
+        onClose
+      );
+    } else {
+      onClose();
+    }
   };
 
   const calculateSubtotal = () => {
@@ -109,7 +128,14 @@ export default function OrderEditor({ products, onSave, onClose, lang }) {
       status: formData.status
     };
 
-    onSave(newOrder);
+    if (showConfirm) {
+      showConfirm(
+        isEn ? "Do you want to create and register this order/quote?" : "Voulez-vous enregistrer et créer cette nouvelle commande / devis ?",
+        () => onSave(newOrder)
+      );
+    } else {
+      onSave(newOrder);
+    }
   };
 
   const subtotal = calculateSubtotal();
@@ -117,7 +143,7 @@ export default function OrderEditor({ products, onSave, onClose, lang }) {
   return (
     <div className="modal-overlay">
       <div className="modal-content" style={{ maxWidth: '900px', maxHeight: '90vh', overflowY: 'auto' }}>
-        <button className="modal-close" onClick={onClose} type="button">
+        <button className="modal-close" onClick={handleCloseWithConfirm} type="button">
           <X size={20} />
         </button>
         <h3 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
@@ -249,7 +275,7 @@ export default function OrderEditor({ products, onSave, onClose, lang }) {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-            <button type="button" onClick={onClose} className="btn btn-outline">
+            <button type="button" onClick={handleCloseWithConfirm} className="btn btn-outline">
               {isEn ? "Cancel" : "Annuler"}
             </button>
             <button type="submit" className="btn btn-primary">

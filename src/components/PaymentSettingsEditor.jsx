@@ -150,7 +150,8 @@ export default function PaymentSettingsEditor({
   settings = {},
   updateSettings,
   lang = 'fr',
-  showAlert
+  showAlert,
+  showConfirm
 }) {
   const isEn = lang === 'en';
 
@@ -287,13 +288,29 @@ export default function PaymentSettingsEditor({
     let updated;
     if (modalMode === 'add') {
       updated = [...gateways, activeEditingGateway];
+      await saveGatewaysToSettings(updated);
+      setModalMode(null);
+      setActiveEditingGateway(null);
     } else {
-      updated = gateways.map(g => g.id === activeEditingGateway.id ? activeEditingGateway : g);
+      if (showConfirm) {
+        showConfirm(
+          isEn 
+            ? `Save modifications to "${activeEditingGateway.name}"?` 
+            : `Confirmez-vous les modifications apportées à l'agrégateur "${activeEditingGateway.name}" ?`,
+          async () => {
+            const up = gateways.map(g => g.id === activeEditingGateway.id ? activeEditingGateway : g);
+            await saveGatewaysToSettings(up);
+            setModalMode(null);
+            setActiveEditingGateway(null);
+          }
+        );
+      } else {
+        updated = gateways.map(g => g.id === activeEditingGateway.id ? activeEditingGateway : g);
+        await saveGatewaysToSettings(updated);
+        setModalMode(null);
+        setActiveEditingGateway(null);
+      }
     }
-
-    await saveGatewaysToSettings(updated);
-    setModalMode(null);
-    setActiveEditingGateway(null);
   };
 
   return (

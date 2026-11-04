@@ -743,12 +743,19 @@ export default function App() {
 
   const deleteEbook = async (ids) => {
     const idsArray = Array.isArray(ids) ? ids : [ids];
-    setEbooks((prev) => prev.filter((b) => !idsArray.includes(b.id)));
-    try {
-      await supabase.from('ebooks').delete().in('id', idsArray);
-    } catch (err) {
-      console.error("Failed to sync deleted ebook to Supabase:", err);
-    }
+    showConfirm(
+      lang === 'fr' 
+        ? `Êtes-vous sûr de vouloir supprimer ${idsArray.length > 1 ? `ces ${idsArray.length} offres numériques` : 'cette offre numérique'} ?` 
+        : `Are you sure you want to delete ${idsArray.length > 1 ? `these ${idsArray.length} items` : 'this item'}?`,
+      async () => {
+        setEbooks((prev) => prev.filter((b) => !idsArray.includes(b.id)));
+        try {
+          await supabase.from('ebooks').delete().in('id', idsArray);
+        } catch (err) {
+          console.error("Failed to sync deleted ebook to Supabase:", err);
+        }
+      }
+    );
   };
 
   const bulkUpdateEbooks = async (ids, updates) => {
