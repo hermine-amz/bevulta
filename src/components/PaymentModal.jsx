@@ -12,10 +12,14 @@ import {
   Mail, 
   Phone,
   CheckCircle2,
-  Lock
+  Lock,
+  Globe,
+  Zap,
+  ExternalLink
 } from 'lucide-react';
 import { downloadWatermarkedPdf } from '../services/pdfWatermarkService';
 import PhoneInputWithCountry from './PhoneInputWithCountry';
+import { defaultSettings } from '../data/defaultSettings';
 
 export default function PaymentModal({
   isOpen,
@@ -63,8 +67,33 @@ export default function PaymentModal({
   const momoOperator = settings?.momoOperator || 'MTN MoMo / Moov Money';
   const whatsappNumber = (settings?.whatsappNumber || '22997699178').replace(/[^0-9]/g, '');
 
+  // Dynamic Active Gateways from Settings
+  const activeGateways = (
+    Array.isArray(settings?.customPaymentGateways) && settings.customPaymentGateways.length > 0
+      ? settings.customPaymentGateways
+      : defaultSettings.customPaymentGateways || []
+  ).filter(g => g.isActive !== false);
+
+  const defaultGw = activeGateways.find(g => g.isDefault) || activeGateways[0];
+  const [selectedGatewayId, setSelectedGatewayId] = useState(defaultGw?.id || 'fedapay');
+
+  useEffect(() => {
+    if (activeGateways.length > 0 && !activeGateways.some(g => g.id === selectedGatewayId)) {
+      setSelectedGatewayId((activeGateways.find(g => g.isDefault) || activeGateways[0]).id);
+    }
+  }, [settings?.customPaymentGateways]);
+
+  const currentGateway = activeGateways.find(g => g.id === selectedGatewayId) || activeGateways[0] || {
+    id: 'momo_manual',
+    name: 'Paiement Mobile Money',
+    type: 'manual',
+    phone: momoNumber,
+    operator: momoOperator,
+    instructions: settings?.momoInstructions || ''
+  };
+
   const handleCopyNumber = () => {
-    navigator.clipboard.writeText(momoNumber.replace(/\s+/g, ''));
+    navigator.clipboard.writeText((currentGateway.phone || momoNumber).replace(/\s+/g, ''));
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
@@ -89,10 +118,10 @@ export default function PaymentModal({
 
   const handleWhatsAppConfirmation = () => {
     const text = encodeURIComponent(
-      `Bonjour BEVULTA, je viens d'effectuer le paiement de ${amountFcfa?.toLocaleString()} FCFA pour "${itemTitle}" au nom de ${buyerName || 'Client'} (${buyerEmail || 'Email non précisé'}, Tél: ${buyerPhone}) (Réf: ${orderId}). Pouvez-vous valider ma commande ? Merci.`
+      `Bonjour BEVULTA, je viens d'effectuer le paiement de ${amountFcfa?.toLocaleString()} FCFA pour "${itemTitle}" via ${currentGateway.name} au nom de ${buyerName || 'Client'} (${buyerEmail || 'Email non précisé'}, Tél: ${buyerPhone}) (Réf: ${orderId}). Pouvez-vous valider ma commande ? Merci.`
     );
     window.open(`https://wa.me/${whatsappNumber}?text=${text}`, '_blank');
-    if (onConfirmPayment) onConfirmPayment({ buyerName, buyerEmail, buyerPhone, orderId, method: selectedMethod });
+    if (onConfirmPayment) onConfirmPayment({ buyerName, buyerEmail, buyerPhone, orderId, method: currentGateway.name });
 
     if (isEbookPurchase) {
       setStep('download');
@@ -102,12 +131,22 @@ export default function PaymentModal({
   };
 
   const handlePaymentCompleted = () => {
-    if (onConfirmPayment) onConfirmPayment({ buyerName, buyerEmail, buyerPhone, orderId, method: selectedMethod });
+    if (onConfirmPayment) onConfirmPayment({ buyerName, buyerEmail, buyerPhone, orderId, method: currentGateway.name });
     if (isEbookPurchase) {
       setStep('download');
     } else {
       onClose();
     }
+  };
+
+  const handlePayViaLink = () => {
+    let targetUrl = currentGateway.checkoutUrl || settings?.customPaymentLink || '';
+    if (targetUrl) {
+      const sep = targetUrl.includes('?') ? '&' : '?';
+      targetUrl = `${targetUrl}${sep}amount=${amountFcfa}&ref=${orderId}&email=${encodeURIComponent(buyerEmail)}&phone=${encodeURIComponent(buyerPhone)}&name=${encodeURIComponent(buyerName)}`;
+      window.open(targetUrl, '_blank');
+    }
+    handlePaymentCompleted();
   };
 
   const handleDirectDownload = async () => {
@@ -256,7 +295,7 @@ export default function PaymentModal({
           </form>
         )}
 
-        {/* STEP 2: PAYMENT INSTRUCTIONS */}
+        {/* STEP 2: PAYMENT INSTRUCTIONS & AGGREGATOR SELECTION */}
         {step === 'payment' && (
           <div>
             {/* Order Details Card */}
@@ -279,103 +318,218 @@ export default function PaymentModal({
               </div>
             </div>
 
-            {/* Direct Transfer Instructions */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                {isEn ? "Transfer to Merchant Number" : "Numéro Marchand / Compte Récepteur :"}
-              </label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="text"
-                  readOnly
-                  value={momoNumber}
-                  style={{
-                    flexGrow: 1,
-                    padding: '12px 14px',
-                    borderRadius: '10px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '1rem',
-                    fontWeight: 800,
-                    color: '#0f172a',
-                    background: '#ffffff'
-                  }}
-                />
+            {/* Aggregator Selector if multiple active */}
+            {activeGateways.length > 1 && (
+              <div style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+                  {isEn ? "Select Payment Solution :" : "Choisissez votre moyen de règlement :"}
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
+                  {activeGateways.map(gw => {
+                    const isSelected = gw.id === currentGateway.id;
+                    return (
+                      <div
+                        key={gw.id}
+                        onClick={() => setSelectedGatewayId(gw.id)}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '10px',
+                          border: isSelected ? '2px solid #166534' : '1px solid #e2e8f0',
+                          background: isSelected ? '#f0fdf4' : '#ffffff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px',
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        <span style={{ fontSize: '0.84rem', fontWeight: 800, color: isSelected ? '#166534' : '#0f172a', lineHeight: 1.2 }}>
+                          {gw.name}
+                        </span>
+                        <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                          {gw.type === 'link' ? '🔗 Lien direct' : gw.type === 'api' ? '⚡ Guichet direct' : '📱 Manuel'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* CASE 1: LINK AGGREGATOR (Hosted checkout: Wave, CinetPay hosted, PayTech, etc.) */}
+            {currentGateway.type === 'link' && (
+              <div style={{ marginBottom: '20px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#0f172a', fontWeight: 800, fontSize: '0.92rem' }}>
+                  <Globe size={18} color="#0284c7" />
+                  <span>Règlement via {currentGateway.name}</span>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45, marginBottom: '14px' }}>
+                  Vous serez automatiquement redirigé vers l'interface sécurisée de <strong>{currentGateway.name}</strong> pour valider votre transaction ({currentGateway.networks || 'Mobile Money & Carte'}).
+                </p>
+
                 <button
                   type="button"
-                  onClick={handleCopyNumber}
+                  onClick={handlePayViaLink}
                   style={{
+                    width: '100%',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '10px 16px',
-                    borderRadius: '10px',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '13px 20px',
+                    borderRadius: '12px',
                     border: 'none',
-                    background: copied ? '#166534' : '#0f172a',
+                    background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
                     color: '#ffffff',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
+                    fontSize: '0.95rem',
+                    fontWeight: 800,
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    boxShadow: '0 4px 12px rgba(22, 163, 74, 0.25)'
                   }}
                 >
-                  {copied ? <Check size={16} /> : <Copy size={16} />}
-                  <span>{copied ? (isEn ? "Copied!" : "Copié !") : (isEn ? "Copy" : "Copier")}</span>
+                  <ExternalLink size={18} />
+                  <span>Procéder au paiement ({amountFcfa?.toLocaleString()} FCFA)</span>
                 </button>
               </div>
-              <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '8px', lineHeight: 1.4 }}>
-                {settings?.momoInstructions || (isEn 
-                  ? "Send the exact amount from your phone. Put your name or order reference in the description." 
-                  : "Effectuez le transfert depuis votre téléphone (MTN ou Moov). Mentionnez votre nom ou la référence en motif.")}
-              </p>
-            </div>
+            )}
 
-            {/* Actions Buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button
-                type="button"
-                onClick={handleWhatsAppConfirmation}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '13px 20px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  background: '#16a34a',
-                  color: '#ffffff',
-                  fontSize: '0.92rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(22, 163, 74, 0.25)'
-                }}
-              >
-                <MessageCircle size={18} />
-                <span>{isEn ? "Confirm on WhatsApp with receipt" : "Confirmer mon transfert sur WhatsApp"}</span>
-              </button>
+            {/* CASE 2: API AGGREGATOR (FedaPay, KKiaPay, CinetPay SDK) */}
+            {currentGateway.type === 'api' && (
+              <div style={{ marginBottom: '20px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#0f172a', fontWeight: 800, fontSize: '0.92rem' }}>
+                  <Zap size={18} color="#166534" />
+                  <span>Guichet de paiement {currentGateway.name}</span>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45, marginBottom: '14px' }}>
+                  Paiement sécurisé et instantané ({currentGateway.networks || 'MTN MoMo, Moov, Cartes'}).
+                </p>
 
+                <button
+                  type="button"
+                  onClick={handlePaymentCompleted}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '13px 20px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                    color: '#ffffff',
+                    fontSize: '0.95rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(22, 163, 74, 0.25)'
+                  }}
+                >
+                  <ShieldCheck size={18} />
+                  <span>Valider mon paiement ({amountFcfa?.toLocaleString()} FCFA)</span>
+                </button>
+              </div>
+            )}
+
+            {/* CASE 3: MANUAL TRANSFER (MTN MoMo, Moov) */}
+            {currentGateway.type === 'manual' && (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  {isEn ? "Transfer to Merchant Number" : "Numéro Marchand / Compte Récepteur :"}
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    readOnly
+                    value={currentGateway.phone || momoNumber}
+                    style={{
+                      flexGrow: 1,
+                      padding: '12px 14px',
+                      borderRadius: '10px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '1rem',
+                      fontWeight: 800,
+                      color: '#0f172a',
+                      background: '#ffffff'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopyNumber}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '10px 16px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: copied ? '#166534' : '#0f172a',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                    <span>{copied ? (isEn ? "Copied!" : "Copié !") : (isEn ? "Copy" : "Copier")}</span>
+                  </button>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '8px', lineHeight: 1.4 }}>
+                  {currentGateway.instructions || settings?.momoInstructions || "Effectuez le transfert vers ce numéro avec la référence en motif, puis confirmez sur WhatsApp."}
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '14px' }}>
+                  <button
+                    type="button"
+                    onClick={handleWhatsAppConfirmation}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: '13px 20px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      background: '#16a34a',
+                      color: '#ffffff',
+                      fontSize: '0.92rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(22, 163, 74, 0.25)'
+                    }}
+                  >
+                    <MessageCircle size={18} />
+                    <span>{isEn ? "Confirm on WhatsApp with receipt" : "Confirmer mon transfert sur WhatsApp"}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Reassurance secondary action */}
+            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px', marginTop: '16px' }}>
               <button
                 type="button"
                 onClick={handlePaymentCompleted}
                 style={{
+                  width: '100%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  padding: '12px 20px',
-                  borderRadius: '12px',
+                  padding: '11px 16px',
+                  borderRadius: '10px',
                   border: '1px solid #cbd5e1',
                   background: '#ffffff',
                   color: '#334155',
-                  fontSize: '0.88rem',
-                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
                   cursor: 'pointer'
                 }}
               >
                 <ShieldCheck size={16} />
                 <span>
                   {isEbookPurchase
-                    ? (isEn ? "I have paid • Download My E-book" : "J'ai payé • Accéder au Téléchargement")
+                    ? (isEn ? "I have already paid • Download E-book" : "J'ai déjà effectué le paiement • Accéder au Téléchargement")
                     : (isEn ? "I have completed the payment" : "J'ai déjà effectué le paiement")}
                 </span>
               </button>

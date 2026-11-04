@@ -25,6 +25,7 @@ import {
 import { initialFormations, FORMATION_CATEGORIES } from '../data/initialFormations';
 import { downloadTrainingProgramPdf } from '../services/pdfWatermarkService';
 import PhoneInputWithCountry from '../components/PhoneInputWithCountry';
+import { defaultSettings } from '../data/defaultSettings';
 
 export default function Formations({ 
   lang = 'fr', 
@@ -629,27 +630,27 @@ export default function Formations({
                   <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
                     Sélectionnez votre moyen de paiement Mobile Money :
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-                    {[
-                      { id: 'mtn', name: 'MTN Mobile Money', color: '#f59e0b', sub: '(Bénin, Côte d\'Ivoire, Togo)' },
-                      { id: 'moov', name: 'Moov Africa Money', color: '#0284c7', sub: '(Bénin, Togo, CI, Burkina)' },
-                      { id: 'wave', name: 'Wave Money', color: '#06b6d4', sub: '(Sénégal, CI)' },
-                      { id: 'orange', name: 'Orange Money', color: '#ea580c', sub: '(Mali, Guinée, BF, CI)' }
-                    ].map(method => (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
+                    {((Array.isArray(settings?.customPaymentGateways) && settings.customPaymentGateways.length > 0
+                      ? settings.customPaymentGateways
+                      : defaultSettings.customPaymentGateways || []
+                    ).filter(g => g.isActive !== false)).map(method => (
                       <div
                         key={method.id}
-                        onClick={() => setSelectedPaymentMethod(method.id)}
+                        onClick={() => setSelectedPaymentMethod(method.name || method.id)}
                         style={{
                           padding: '12px',
                           borderRadius: '10px',
-                          border: selectedPaymentMethod === method.id ? '2px solid #166534' : '1px solid #e2e8f0',
-                          background: selectedPaymentMethod === method.id ? '#f0fdf4' : '#ffffff',
+                          border: selectedPaymentMethod === (method.name || method.id) ? '2px solid #166534' : '1px solid #e2e8f0',
+                          background: selectedPaymentMethod === (method.name || method.id) ? '#f0fdf4' : '#ffffff',
                           cursor: 'pointer',
                           transition: 'all 0.2s'
                         }}
                       >
                         <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>{method.name}</div>
-                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{method.sub}</div>
+                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                          {method.type === 'link' ? '🔗 Lien direct' : method.type === 'api' ? '⚡ Guichet direct' : '📱 Manuel'}
+                        </div>
                       </div>
                     ))}
                   </div>

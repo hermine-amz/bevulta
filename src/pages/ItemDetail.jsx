@@ -25,6 +25,7 @@ import {
 import PaymentModal from '../components/PaymentModal';
 import { downloadTrainingProgramPdf } from '../services/pdfWatermarkService';
 import PhoneInputWithCountry from '../components/PhoneInputWithCountry';
+import { defaultSettings } from '../data/defaultSettings';
 
 export default function ItemDetail({
   detail,
@@ -1080,27 +1081,28 @@ export default function ItemDetail({
                   Total à régler : <strong style={{ color: '#166534', fontSize: '1.1rem' }}>{(item.promoPriceFcfa || item.priceFcfa).toLocaleString()} FCFA</strong>
                 </p>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '20px' }}>
-                  {[
-                    { id: 'mtn', name: 'MTN Mobile Money' },
-                    { id: 'moov', name: 'Moov Africa Money' },
-                    { id: 'wave', name: 'Wave Money' },
-                    { id: 'orange', name: 'Orange Money' }
-                  ].map(method => (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px', marginBottom: '20px' }}>
+                  {((Array.isArray(settings?.customPaymentGateways) && settings.customPaymentGateways.length > 0
+                    ? settings.customPaymentGateways
+                    : defaultSettings.customPaymentGateways || []
+                  ).filter(g => g.isActive !== false)).map(gw => (
                     <div
-                      key={method.id}
-                      onClick={() => setSelectedPaymentMethod(method.id)}
+                      key={gw.id}
+                      onClick={() => setSelectedPaymentMethod(gw.name || gw.id)}
                       style={{
                         padding: '12px',
                         borderRadius: '10px',
-                        border: selectedPaymentMethod === method.id ? '2px solid #166534' : '1px solid #e2e8f0',
-                        background: selectedPaymentMethod === method.id ? '#f0fdf4' : '#ffffff',
+                        border: selectedPaymentMethod === (gw.name || gw.id) ? '2px solid #166534' : '1px solid #e2e8f0',
+                        background: selectedPaymentMethod === (gw.name || gw.id) ? '#f0fdf4' : '#ffffff',
                         cursor: 'pointer',
                         fontWeight: 700,
                         fontSize: '0.85rem'
                       }}
                     >
-                      {method.name}
+                      <div>{gw.name}</div>
+                      <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 500, marginTop: '2px' }}>
+                        {gw.type === 'link' ? '🔗 Lien direct' : gw.type === 'api' ? '⚡ Guichet direct' : '📱 Transfert Manuel'}
+                      </div>
                     </div>
                   ))}
                 </div>

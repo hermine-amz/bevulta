@@ -375,6 +375,9 @@ export default function App() {
               let val = s.value;
               if (val === 'true') val = true;
               if (val === 'false') val = false;
+              if (typeof val === 'string' && (val.startsWith('[') || val.startsWith('{'))) {
+                try { val = JSON.parse(val); } catch(e) {}
+              }
               updated[s.key] = val;
             });
             localStorage.setItem('bevulta_settings', JSON.stringify(updated));
@@ -901,7 +904,11 @@ export default function App() {
     try {
       const upserts = Object.keys(newSettings).map(key => ({
         key,
-        value: typeof newSettings[key] === 'boolean' ? String(newSettings[key]) : (newSettings[key] ?? '')
+        value: typeof newSettings[key] === 'boolean' 
+          ? String(newSettings[key]) 
+          : (typeof newSettings[key] === 'object' && newSettings[key] !== null 
+              ? JSON.stringify(newSettings[key]) 
+              : (newSettings[key] ?? ''))
       }));
       await supabase.from('settings').upsert(upserts);
     } catch (err) {
