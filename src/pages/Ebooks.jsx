@@ -137,7 +137,7 @@ export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert, setti
   };
 
   return (
-    <div className="ebooks-page" style={{ padding: '40px 20px 80px', maxWidth: '1280px', margin: '0 auto' }}>
+    <div className="ebooks-page" style={{ padding: '120px 20px 80px', maxWidth: '1280px', margin: '0 auto' }}>
       
       {/* Hero Banner Header */}
       <div 

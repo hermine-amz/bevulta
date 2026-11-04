@@ -7,8 +7,19 @@ import PhoneInputWithCountry from '../components/PhoneInputWithCountry';
 import CountrySelect from '../components/CountrySelect';
 import { t } from '../data/translations';
 
-export default function Order({ cart, updateQty, removeFromCart, clearCart, onSubmitOrder, lang, showAlert, settings = {} }) {
+export default function Order({ cart, updateQty, removeFromCart, clearCart, onSubmitOrder, lang, showAlert, showConfirm, settings = {} }) {
   const isEn = lang === 'en';
+
+  const handleClearCart = () => {
+    if (showConfirm) {
+      showConfirm(
+        lang === 'fr' ? "Voulez-vous vraiment vider votre panier de devis ?" : "Do you really want to clear your quotation cart?",
+        clearCart
+      );
+    } else {
+      clearCart();
+    }
+  };
 
   const [formData, setFormData] = useState({
     clientName: '',
@@ -144,14 +155,14 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
   if (orderSuccess && createdOrder) {
     return (
       <>
-        <div style={{ padding: "100px 24px 60px", maxWidth: "850px", margin: "0 auto", textAlign: "center", animation: "fadeIn 0.5s ease" }}>
+        <div className="order-success-page">
           {/* Top Non-printable Congratulations */}
           <div className="no-print" style={{ marginBottom: "24px" }}>
-            <CheckCircle size={64} style={{ color: "#16a34a", margin: "0 auto 16px" }} />
-            <h2 style={{ fontSize: "2rem", color: "#0f172a", marginBottom: "8px", fontWeight: 800 }}>
+            <CheckCircle size={56} style={{ color: "#16a34a", margin: "0 auto 16px" }} />
+            <h2 className="order-success-title">
               {isEn ? "Quote Request Submitted Successfully!" : "Votre Demande de Devis a été Enregistrée !"}
             </h2>
-            <p style={{ color: "#64748b", fontSize: "1rem", margin: 0 }}>
+            <p style={{ color: "#64748b", fontSize: "0.95rem", margin: 0 }}>
               {isEn ? "Your quotation reference is" : "Référence de votre dossier :"} <strong style={{ color: "#166534" }}>{createdOrder.id}</strong>
             </p>
           </div>
@@ -280,7 +291,6 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
           <div className="print-invoice-sheet" style={{
             textAlign: "left",
             backgroundColor: "#ffffff",
-            padding: "32px",
             borderRadius: "16px",
             border: "1px solid #e2e8f0",
             boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
@@ -365,45 +375,47 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
               </div>
             </div>
 
-            {/* Products Table */}
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.86rem", marginBottom: "20px" }}>
-              <thead>
-                <tr style={{ background: "#f1f5f9", borderBottom: "2px solid #cbd5e1", fontSize: "0.76rem", color: "#475569", textTransform: "uppercase" }}>
-                  <th style={{ textAlign: "left", padding: "10px 12px" }}>Désignation Équipement / Guide</th>
-                  <th style={{ textAlign: "center", padding: "10px 12px", width: "60px" }}>Qté</th>
-                  <th style={{ textAlign: "right", padding: "10px 12px", width: "140px" }}>Prix Unitaire</th>
-                  <th style={{ textAlign: "right", padding: "10px 12px", width: "160px" }}>Total (FCFA)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {createdOrder.items.map((item, idx) => (
-                  <tr key={idx} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                    <td style={{ padding: "12px" }}>
-                      <div style={{ fontWeight: 700, color: "#0f172a" }}>{item.name}</div>
-                      {item.specs && item.specs["Motorisation"] && (
-                        <div style={{ fontSize: "0.75rem", color: "#166534", fontWeight: 600 }}>Option : {item.specs["Motorisation"]}</div>
-                      )}
+            {/* Products Table with scrollable wrapper for mobile */}
+            <div className="proforma-table-wrapper">
+              <table className="proforma-table">
+                <thead>
+                  <tr style={{ background: "#f1f5f9", borderBottom: "2px solid #cbd5e1", fontSize: "0.76rem", color: "#475569", textTransform: "uppercase" }}>
+                    <th style={{ textAlign: "left", padding: "10px 12px" }}>Désignation Équipement / Guide</th>
+                    <th style={{ textAlign: "center", padding: "10px 12px", width: "60px" }}>Qté</th>
+                    <th style={{ textAlign: "right", padding: "10px 12px", width: "140px" }}>Prix Unitaire</th>
+                    <th style={{ textAlign: "right", padding: "10px 12px", width: "160px" }}>Total (FCFA)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {createdOrder.items.map((item, idx) => (
+                    <tr key={idx} style={{ borderBottom: "1px solid #e2e8f0" }}>
+                      <td style={{ padding: "12px" }}>
+                        <div style={{ fontWeight: 700, color: "#0f172a" }}>{item.name}</div>
+                        {item.specs && item.specs["Motorisation"] && (
+                          <div style={{ fontSize: "0.75rem", color: "#166534", fontWeight: 600 }}>Option : {item.specs["Motorisation"]}</div>
+                        )}
+                      </td>
+                      <td style={{ textAlign: "center", padding: "12px", fontWeight: 700 }}>{item.quantity}</td>
+                      <td style={{ textAlign: "right", padding: "12px" }}>{item.priceFcfa.toLocaleString()} FCFA</td>
+                      <td style={{ textAlign: "right", padding: "12px", fontWeight: 800, color: "#0f172a" }}>
+                        {(item.priceFcfa * item.quantity).toLocaleString()} FCFA
+                      </td>
+                    </tr>
+                  ))}
+                  <tr style={{ background: "#f8fafc", borderTop: "2px solid #0f172a" }}>
+                    <td colSpan="3" style={{ padding: "14px 12px", textAlign: "right", fontWeight: 800, fontSize: "0.95rem", color: "#0f172a" }}>
+                      MONTANT TOTAL ESTIMÉ :
                     </td>
-                    <td style={{ textAlign: "center", padding: "12px", fontWeight: 700 }}>{item.quantity}</td>
-                    <td style={{ textAlign: "right", padding: "12px" }}>{item.priceFcfa.toLocaleString()} FCFA</td>
-                    <td style={{ textAlign: "right", padding: "12px", fontWeight: 800, color: "#0f172a" }}>
-                      {(item.priceFcfa * item.quantity).toLocaleString()} FCFA
+                    <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 900, fontSize: "1.2rem", color: "#166534" }}>
+                      {createdOrder.totalFcfa.toLocaleString()} FCFA
+                      <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 500 }}>
+                        (Soit env. {createdOrder.totalEur?.toLocaleString()} €)
+                      </div>
                     </td>
                   </tr>
-                ))}
-                <tr style={{ background: "#f8fafc", borderTop: "2px solid #0f172a" }}>
-                  <td colSpan="3" style={{ padding: "14px 12px", textAlign: "right", fontWeight: 800, fontSize: "0.95rem", color: "#0f172a" }}>
-                    MONTANT TOTAL ESTIMÉ :
-                  </td>
-                  <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 900, fontSize: "1.2rem", color: "#166534" }}>
-                    {createdOrder.totalFcfa.toLocaleString()} FCFA
-                    <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 500 }}>
-                      (Soit env. {createdOrder.totalEur?.toLocaleString()} €)
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
 
             {/* Official Terms & Workshop Notes */}
             <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px", fontSize: "0.78rem", color: "#64748b", lineHeight: 1.5 }}>
@@ -417,7 +429,7 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
           </div>
 
           {/* Action Buttons (HIDDEN when printed) */}
-          <div className="no-print" style={{ display: "flex", gap: "14px", justifyContent: "center", flexWrap: "wrap" }}>
+          <div className="no-print order-success-actions">
             <button
               type="button"
               className="btn btn-outline"
@@ -476,8 +488,8 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
     <div className="order-page">
       {/* Main Cart Area */}
       <div className="order-main">
-        <h2 style={{ fontSize: '1.8rem', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <ShoppingCart size={28} />
+        <h2 className="order-title">
+          <ShoppingCart size={26} />
           <span>{t('orderTitle', lang)} ({cart.length} {isEn ? `item${cart.length > 1 ? 's' : ''}` : `article${cart.length > 1 ? 's' : ''}`})</span>
         </h2>
 
@@ -502,7 +514,7 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
                 </span>
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="order-items-list">
               {cart.map((item) => (
                 <div key={item.id} className="order-item">
                   <img src={item.image} alt={item.name} className="order-item-img" />
@@ -517,41 +529,43 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
                       )}
                     </div>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>{t('orderCategory', lang)} : {item.category}</p>
-                    <div style={{ marginTop: '8px', fontWeight: 700, color: 'var(--primary)' }}>
-                      {item.priceFcfa.toLocaleString()} FCFA <span style={{ fontWeight: 500, fontSize: '0.75rem', color: 'var(--text-muted)' }}>({item.priceEur} €)</span>
+                    <div className="order-item-price">
+                      {item.priceFcfa.toLocaleString()} FCFA <span className="order-item-price-eur">({item.priceEur} €)</span>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                  <div className="order-item-actions">
                     <div className="order-item-qty">
-                      <button onClick={() => handleQtyChange(item.id, item.quantity - 1)}>
+                      <button type="button" onClick={() => handleQtyChange(item.id, item.quantity - 1)} aria-label="Diminuer">
                         <Minus size={14} />
                       </button>
-                      <span style={{ fontWeight: 'bold', minWidth: '20px', textAlign: 'center' }}>{item.quantity}</span>
-                      <button onClick={() => handleQtyChange(item.id, item.quantity + 1)}>
+                      <span className="order-qty-count">{item.quantity}</span>
+                      <button type="button" onClick={() => handleQtyChange(item.id, item.quantity + 1)} aria-label="Augmenter">
                         <Plus size={14} />
                       </button>
                     </div>
 
                     <button 
-                      style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', padding: '8px', border: 'none', background: 'none', cursor: 'pointer' }} 
+                      type="button"
+                      className="order-item-remove-btn"
                       onClick={() => removeFromCart(item.id)}
                       title={isEn ? "Remove" : "Retirer"}
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={16} />
+                      <span className="order-remove-label">{isEn ? "Remove" : "Retirer"}</span>
                     </button>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
-              <button className="btn btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={clearCart}>
+            <div className="order-footer-bar">
+              <button type="button" className="btn btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={handleClearCart}>
                 {t('orderClear', lang)}
               </button>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{t('orderSubtotal', lang)}</div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--secondary)' }}>
+              <div className="order-footer-total">
+                <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>{t('orderSubtotal', lang)}</div>
+                <div className="order-subtotal-val">
                   {getSubtotal().toLocaleString()} FCFA
                 </div>
               </div>
@@ -644,18 +658,12 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
           </div>
 
           {/* Pricing Recap Box */}
-          <div style={{
-            backgroundColor: 'var(--bg-surface)',
-            padding: '16px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--border-color)',
-            marginBottom: '24px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>
+          <div className="order-summary-box">
+            <div className="order-summary-total-row">
               <span>{t('orderTotalEst', lang)}</span>
               <span>{getSubtotal().toLocaleString()} FCFA</span>
             </div>
-            <div style={{ textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+            <div className="order-summary-eur">
               {isEn ? "Approx. " : "Soit environ "} {Math.round(getSubtotal() / 655.957).toLocaleString()} €
             </div>
           </div>

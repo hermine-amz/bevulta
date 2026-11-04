@@ -240,6 +240,26 @@ export default function Navbar({
             )}
           </a>
 
+          {/* Mon Espace Link on mobile */}
+          <a
+            href="#login"
+            className="mobile-quick-btn"
+            title={user ? t('navMySpace', lang) : t('navConnect', lang)}
+            onClick={handleAuthClick}
+          >
+            <LayoutDashboard size={17} />
+          </a>
+
+          {/* Theme toggle on mobile */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="mobile-quick-btn"
+            title={theme === 'light' ? (lang === 'fr' ? 'Mode sombre' : 'Dark mode') : (lang === 'fr' ? 'Mode clair' : 'Light mode')}
+          >
+            {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+          </button>
+
           {/* Language toggle on mobile */}
           <button
             type="button"
@@ -259,7 +279,7 @@ export default function Navbar({
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle menu"
           >
-            {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>

@@ -149,7 +149,7 @@ export default function PhoneInputWithCountry({
             fontSize: '0.95rem',
             color: 'var(--text-primary, #0f172a)',
             background: 'transparent',
-            minWidth: '120px'
+            minWidth: '0'
           }}
         />
       </div>
