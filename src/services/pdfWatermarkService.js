@@ -550,3 +550,396 @@ export async function downloadWatermarkedPdf(ebook, customerInfo = {}) {
 
   return { success: true, fileName };
 }
+
+
+/**
+ * Generates and downloads an authentic, official BEVULTA Training Program (Syllabus) & Admission Convocation PDF.
+ */
+export async function downloadTrainingProgramPdf(formation, customerInfo = {}) {
+  const {
+    name = 'Apprenant BEVULTA',
+    email = 'apprenant@bevulta.com',
+    phone = '',
+    orderId = `FORM-${Date.now().toString().slice(-6)}`,
+    mode = 'Présentiel en Atelier (Cotonou)'
+  } = customerInfo;
+
+  const pdfDoc = await PDFDocument.create();
+  const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const obliqueFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+
+  const cleanName = sanitizeForPdf(name);
+  const cleanEmail = sanitizeForPdf(email);
+  const cleanPhone = sanitizeForPdf(phone);
+  const cleanOrderId = sanitizeForPdf(orderId);
+  const cleanTitle = sanitizeForPdf(formation.title || 'Formation Professionnelle BEVULTA');
+  const cleanSubtitle = sanitizeForPdf(formation.subtitle || 'Programme Pratique de Formation Continue');
+  const cleanDuration = sanitizeForPdf(formation.duration || '3 Jours (24h)');
+  const cleanLocation = sanitizeForPdf(formation.location || 'Atelier Central BEVULTA, Cotonou, Bénin');
+  const cleanSession = sanitizeForPdf(formation.nextSession || 'Session Mensuelle');
+  const dateStr = formatDate();
+
+  // ================= PAGE 1 : CONVOCATION & DOSSIER D ADMISSION =================
+  const page1 = pdfDoc.addPage([595.28, 841.89]);
+  const { width: p1W, height: p1H } = page1.getSize();
+
+  // Top header block
+  page1.drawRectangle({
+    x: 0,
+    y: p1H - 220,
+    width: p1W,
+    height: 220,
+    color: rgb(0.08, 0.38, 0.20), // #14532d
+  });
+
+  // Gold accent band
+  page1.drawRectangle({
+    x: 0,
+    y: p1H - 226,
+    width: p1W,
+    height: 6,
+    color: rgb(0.85, 0.47, 0.05), // #d97706
+  });
+
+  // Brand tag
+  page1.drawText('BEVULTA ACADEMY | POLE FORMATION PROFESSIONNELLE & INDUSTRIELLE', {
+    x: 40,
+    y: p1H - 50,
+    size: 10,
+    font: boldFont,
+    color: rgb(0.9, 0.98, 0.92),
+  });
+
+  // Title
+  page1.drawText('PROGRAMME OFFICIEL & DOSSIER D ADMISSION', {
+    x: 40,
+    y: p1H - 85,
+    size: 18,
+    font: boldFont,
+    color: rgb(1, 1, 1),
+  });
+
+  // Formation Name
+  const displayTitle = cleanTitle.length > 55 ? cleanTitle.substring(0, 52) + '...' : cleanTitle;
+  page1.drawText(displayTitle, {
+    x: 40,
+    y: p1H - 120,
+    size: 15,
+    font: boldFont,
+    color: rgb(0.98, 0.85, 0.4),
+  });
+
+  // Subtitle
+  const displaySubtitle = cleanSubtitle.length > 75 ? cleanSubtitle.substring(0, 72) + '...' : cleanSubtitle;
+  page1.drawText(displaySubtitle, {
+    x: 40,
+    y: p1H - 148,
+    size: 10,
+    font: regularFont,
+    color: rgb(0.85, 0.95, 0.88),
+  });
+
+  // Admission Status Badge
+  page1.drawRectangle({
+    x: 40,
+    y: p1H - 195,
+    width: 320,
+    height: 26,
+    color: rgb(0.12, 0.55, 0.28),
+  });
+  page1.drawText('STATUT : PAIEMENT CONFIRME - DOSSIER VALIDE', {
+    x: 52,
+    y: p1H - 186,
+    size: 9,
+    font: boldFont,
+    color: rgb(1, 1, 1),
+  });
+
+  // SECTION : INFORMATIONS PARTICIPANT
+  page1.drawRectangle({
+    x: 40,
+    y: p1H - 390,
+    width: p1W - 80,
+    height: 145,
+    color: rgb(0.97, 0.98, 0.97),
+    borderColor: rgb(0.8, 0.88, 0.82),
+    borderWidth: 1,
+  });
+
+  page1.drawText('INFORMATIONS DE L APPRENANT & CONVOCATION', {
+    x: 55,
+    y: p1H - 265,
+    size: 11,
+    font: boldFont,
+    color: rgb(0.08, 0.38, 0.20),
+  });
+
+  const participantFields = [
+    ['Nom & Prenom :', cleanName],
+    ['Dossier Inscription N :', cleanOrderId],
+    ['Telephone / WhatsApp :', cleanPhone || 'Non renseigne'],
+    ['Email :', cleanEmail],
+    ['Modalite :', sanitizeForPdf(mode)],
+    ['Lieu de formation :', cleanLocation]
+  ];
+
+  participantFields.forEach((field, i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const x = col === 0 ? 55 : 300;
+    const y = p1H - 295 - (row * 24);
+
+    page1.drawText(field[0], {
+      x,
+      y,
+      size: 9,
+      font: boldFont,
+      color: rgb(0.2, 0.3, 0.25),
+    });
+    page1.drawText(field[1], {
+      x: x + (col === 0 ? 115 : 100),
+      y,
+      size: 9,
+      font: regularFont,
+      color: rgb(0.05, 0.15, 0.1),
+    });
+  });
+
+  // SECTION : CALENDRIER & DEROULEMENT
+  page1.drawText('MODALITES PRATIQUES DE LA SESSION', {
+    x: 40,
+    y: p1H - 420,
+    size: 11,
+    font: boldFont,
+    color: rgb(0.1, 0.2, 0.15),
+  });
+
+  const practicalPoints = [
+    `* Duree globale : ${cleanDuration} d immersion pratique intense.`,
+    `* Calendrier des sessions : ${cleanSession} (Horaires : 08h30 - 16h30).`,
+    `* Equipements fournis : Blouse d atelier, gants de protection et supports de cours.`,
+    `* Dejeuners : Restauration et pauses-cafe assurees chaque jour par BEVULTA.`,
+    `* Attestation : Certificat officiel remis en main propre lors de la cloture.`
+  ];
+
+  practicalPoints.forEach((pt, idx) => {
+    page1.drawText(sanitizeForPdf(pt), {
+      x: 48,
+      y: p1H - 445 - (idx * 20),
+      size: 9.5,
+      font: regularFont,
+      color: rgb(0.15, 0.2, 0.2),
+    });
+  });
+
+  // Official Stamp & Signature Block
+  page1.drawRectangle({
+    x: p1W - 240,
+    y: p1H - 650,
+    width: 200,
+    height: 85,
+    color: rgb(0.98, 0.98, 0.98),
+    borderColor: rgb(0.85, 0.47, 0.05),
+    borderWidth: 1.5,
+  });
+
+  page1.drawText('DIRECTION TECHNIQUE BEVULTA', {
+    x: p1W - 228,
+    y: p1H - 585,
+    size: 9,
+    font: boldFont,
+    color: rgb(0.85, 0.47, 0.05),
+  });
+
+  page1.drawText('Signature & Cachet Officiel :', {
+    x: p1W - 228,
+    y: p1H - 602,
+    size: 8,
+    font: obliqueFont,
+    color: rgb(0.4, 0.4, 0.4),
+  });
+
+  page1.drawText('[ VISA & ENROLEMENT CONFIRME ]', {
+    x: p1W - 228,
+    y: p1H - 635,
+    size: 8.5,
+    font: boldFont,
+    color: rgb(0.08, 0.38, 0.20),
+  });
+
+  // Footer on Page 1
+  page1.drawRectangle({
+    x: 0,
+    y: 0,
+    width: p1W,
+    height: 35,
+    color: rgb(0.95, 0.96, 0.95),
+  });
+  page1.drawText(`Document officiel BEVULTA delivre le ${dateStr} - Convocation strictement personnelle N ${cleanOrderId}`, {
+    x: 40,
+    y: 14,
+    size: 8,
+    font: regularFont,
+    color: rgb(0.4, 0.45, 0.4),
+  });
+
+  // ================= PAGE 2 : PROGRAMME DETAILLE DES MODULES =================
+  const page2 = pdfDoc.addPage([595.28, 841.89]);
+  const { height: p2H } = page2.getSize();
+
+  // Top slim header
+  page2.drawRectangle({
+    x: 0,
+    y: p2H - 55,
+    width: p1W,
+    height: 55,
+    color: rgb(0.08, 0.38, 0.20),
+  });
+
+  page2.drawText('PROGRAMME PEDAGOGIQUE DETAILLE - BEVULTA ACADEMY', {
+    x: 40,
+    y: p2H - 35,
+    size: 11,
+    font: boldFont,
+    color: rgb(1, 1, 1),
+  });
+
+  let currentY = p2H - 85;
+
+  // Introduction
+  page2.drawText('SYLLABUS DU CYCLE DE FORMATION CONTINUE', {
+    x: 40,
+    y: currentY,
+    size: 12,
+    font: boldFont,
+    color: rgb(0.08, 0.38, 0.20),
+  });
+  currentY -= 20;
+
+  const descLines = [
+    sanitizeForPdf(formation.description || ''),
+    `Public cible : ${sanitizeForPdf(formation.targetAudience || 'Tous publics')}`,
+    `Prerequis : ${sanitizeForPdf(formation.prerequisites || 'Aucun')}`
+  ];
+
+  descLines.forEach(line => {
+    page2.drawText(line.length > 90 ? line.substring(0, 87) + '...' : line, {
+      x: 40,
+      y: currentY,
+      size: 8.5,
+      font: obliqueFont,
+      color: rgb(0.3, 0.35, 0.3),
+    });
+    currentY -= 14;
+  });
+
+  currentY -= 10;
+
+  // Render Modules
+  const modulesList = formation.modules || [];
+  modulesList.forEach((mod) => {
+    // Module Card Header
+    page2.drawRectangle({
+      x: 40,
+      y: currentY - 20,
+      width: p1W - 80,
+      height: 22,
+      color: rgb(0.9, 0.95, 0.92),
+      borderColor: rgb(0.12, 0.55, 0.28),
+      borderWidth: 0.5,
+    });
+
+    const modTitle = `MODULE ${mod.number || ''} : ${sanitizeForPdf(mod.title || '')} (${sanitizeForPdf(mod.duration || '')})`;
+    page2.drawText(modTitle.length > 70 ? modTitle.substring(0, 67) + '...' : modTitle, {
+      x: 48,
+      y: currentY - 14,
+      size: 9.5,
+      font: boldFont,
+      color: rgb(0.08, 0.38, 0.20),
+    });
+
+    currentY -= 32;
+
+    (mod.points || []).forEach(pt => {
+      const cleanPt = `- ${sanitizeForPdf(pt)}`;
+      page2.drawText(cleanPt.length > 85 ? cleanPt.substring(0, 82) + '...' : cleanPt, {
+        x: 55,
+        y: currentY,
+        size: 8.5,
+        font: regularFont,
+        color: rgb(0.15, 0.2, 0.18),
+      });
+      currentY -= 15;
+    });
+
+    currentY -= 10;
+  });
+
+  // Bottom Workshop Hotline Box
+  page2.drawRectangle({
+    x: 40,
+    y: 50,
+    width: p1W - 80,
+    height: 60,
+    color: rgb(0.97, 0.98, 0.97),
+    borderColor: rgb(0.8, 0.88, 0.82),
+    borderWidth: 1,
+  });
+
+  page2.drawText('CONTACT DU FORMATEUR EN CHEF & ASSISTANCE ATELIER :', {
+    x: 52,
+    y: 92,
+    size: 8.5,
+    font: boldFont,
+    color: rgb(0.08, 0.38, 0.20),
+  });
+
+  page2.drawText('WhatsApp Hotline : (+229) 97 69 91 78 / (+229) 01 97 69 91 78 - Email : contact@bevulta.com', {
+    x: 52,
+    y: 76,
+    size: 8,
+    font: regularFont,
+    color: rgb(0.2, 0.25, 0.2),
+  });
+
+  page2.drawText('Atelier Central BEVULTA, Cotonou, Republique du Benin - www.bevulta.com', {
+    x: 52,
+    y: 62,
+    size: 8,
+    font: regularFont,
+    color: rgb(0.4, 0.45, 0.4),
+  });
+
+  // Security watermark stamp across both pages
+  await stampPdfWithWatermark(pdfDoc, {
+    clientName: cleanName,
+    clientEmail: cleanEmail,
+    clientPhone: cleanPhone,
+    orderId: cleanOrderId,
+    dateStr,
+    websiteUrl: 'bevulta.com/formations'
+  });
+
+  // Download Trigger
+  const pdfBytes = await pdfDoc.save();
+  const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+
+  const sanitizedFormation = (formation.title || 'Formation-BEVULTA')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .substring(0, 30);
+  const sanitizedParticipant = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  const fileName = `Programme-Formation-${sanitizedFormation}-${sanitizedParticipant}.pdf`;
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+  return { success: true, fileName };
+}

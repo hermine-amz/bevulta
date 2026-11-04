@@ -14,6 +14,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import ClientDashboard from './pages/ClientDashboard';
 import Ebooks from './pages/Ebooks';
 import TrackOrder from './pages/TrackOrder';
+import Formations from './pages/Formations';
 
 // Initial Data
 import { initialProducts } from './data/initialProducts';
@@ -1215,6 +1216,14 @@ export default function App() {
             addOrder={handleSubmitOrder}
           />
         )}
+        {currentPage === 'formations' && (
+          <Formations 
+            lang={lang} 
+            showAlert={showAlert} 
+            settings={settings} 
+            addOrder={handleSubmitOrder} 
+          />
+        )}
         {currentPage === 'services' && <Services lang={lang} />}
         {currentPage === 'about' && <About lang={lang} />}
         {currentPage === 'contact' && <Contact onSendMessage={handleSendMessage} lang={lang} showAlert={showAlert} showConfirm={showConfirm} settings={settings} />}
@@ -1230,6 +1239,7 @@ export default function App() {
             showConfirm={showConfirm}
             settings={settings}
             onGoToTracking={handleGoToTracking}
+            setCurrentPage={setCurrentPage}
           />
         )}
         {currentPage === 'track' && (

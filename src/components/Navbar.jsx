@@ -88,14 +88,7 @@ export default function Navbar({
               className={`nav-link ${currentPage === link.id ? 'active' : ''}`}
               onClick={(e) => {
                 e.preventDefault();
-                if (link.id === 'formations') {
-                  setCurrentPage('home');
-                  setTimeout(() => {
-                    document.getElementById('pillars-section')?.scrollIntoView({ behavior: 'smooth' });
-                  }, 100);
-                } else {
-                  setCurrentPage(link.id);
-                }
+                setCurrentPage(link.id);
               }}
             >
               {link.label}
@@ -321,14 +314,7 @@ export default function Navbar({
                   className={`mobile-nav-link ${currentPage === link.id ? 'active' : ''}`}
                   onClick={(e) => {
                     e.preventDefault();
-                    if (link.id === 'formations') {
-                      setCurrentPage('home');
-                      setTimeout(() => {
-                        document.getElementById('pillars-section')?.scrollIntoView({ behavior: 'smooth' });
-                      }, 100);
-                    } else {
-                      setCurrentPage(link.id);
-                    }
+                    setCurrentPage(link.id);
                     setIsMenuOpen(false);
                   }}
                 >

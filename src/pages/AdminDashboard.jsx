@@ -1125,7 +1125,11 @@ export default function AdminDashboard({
                               <td style={{ padding: '14px 20px' }}>
                                 <div style={{ fontWeight: 700, color: '#0f172a' }}>{order.id}</div>
                                 <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{order.date}</div>
-                                {order.id?.startsWith('EBK-') || order.items?.some(it => String(it.id).startsWith('ebook-') || it.name?.toLowerCase().includes('e-book')) ? (
+                                {order.id?.startsWith('FORM-') || order.items?.some(it => String(it.id).startsWith('form-') || it.name?.toLowerCase().includes('formation')) ? (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#ede9fe', color: '#6d28d9', marginTop: '4px' }}>
+                                    🎓 Formation
+                                  </span>
+                                ) : order.id?.startsWith('EBK-') || order.items?.some(it => String(it.id).startsWith('ebook-') || it.name?.toLowerCase().includes('e-book')) ? (
                                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#fef3c7', color: '#b45309', marginTop: '4px' }}>
                                     📚 E-book
                                   </span>
@@ -1800,7 +1804,11 @@ export default function AdminDashboard({
                       <tr key={order.id}>
                         <td style={{ fontWeight: 800 }}>
                           <div>{order.id}</div>
-                          {order.id?.startsWith('EBK-') || order.items?.some(it => String(it.id).startsWith('ebook-') || it.name?.toLowerCase().includes('e-book')) ? (
+                          {order.id?.startsWith('FORM-') || order.items?.some(it => String(it.id).startsWith('form-') || it.name?.toLowerCase().includes('formation')) ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#ede9fe', color: '#6d28d9', marginTop: '4px' }}>
+                              🎓 Formation
+                            </span>
+                          ) : order.id?.startsWith('EBK-') || order.items?.some(it => String(it.id).startsWith('ebook-') || it.name?.toLowerCase().includes('e-book')) ? (
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#fef3c7', color: '#b45309', marginTop: '4px' }}>
                               📚 E-book
                             </span>

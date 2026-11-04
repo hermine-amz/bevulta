@@ -272,9 +272,7 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
               <button 
                 className="btn btn-outline"
                 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-                onClick={() => {
-                  document.getElementById('pillars-section')?.scrollIntoView({ behavior: 'smooth' });
-                }}
+                onClick={() => setCurrentPage('formations')}
               >
                 <GraduationCap size={18} />
                 <span>{activeSettings.heroCtaSecondary || (isEn ? "Our Trainings" : "Nos Formations")}</span>
@@ -430,6 +428,14 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
                   ? "Hands-on training in machine operation, industrial maintenance, and agricultural entrepreneurship to ensure local autonomy."
                   : "Formation technique pratique pour la maintenance de machines, la conduite d'équipements et l'entrepreneuriat agricole."}
               </p>
+              <button 
+                className="btn btn-outline" 
+                style={{ marginTop: '14px', fontSize: '0.82rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }} 
+                onClick={() => setCurrentPage('formations')}
+              >
+                <span>{isEn ? "Explore Trainings & Syllabuses" : "Découvrir les Formations"}</span>
+                <span>→</span>
+              </button>
             </div>
 
             <div className="pillar-card">

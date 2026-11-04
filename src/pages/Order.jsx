@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus, Trash2, ShieldCheck, CheckCircle, FileText, CreditCard, Download, Wrench, MessageCircle } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, ShieldCheck, CheckCircle, FileText, CreditCard, Download, Wrench, MessageCircle, Home } from 'lucide-react';
 import { initiatePayment } from '../services/paymentService';
 import { downloadWatermarkedPdf } from '../services/pdfWatermarkService';
 import PaymentModal from '../components/PaymentModal';
@@ -7,7 +7,7 @@ import PhoneInputWithCountry from '../components/PhoneInputWithCountry';
 import CountrySelect from '../components/CountrySelect';
 import { t } from '../data/translations';
 
-export default function Order({ cart, updateQty, removeFromCart, clearCart, onSubmitOrder, lang, showAlert, showConfirm, settings = {}, onGoToTracking }) {
+export default function Order({ cart, updateQty, removeFromCart, clearCart, onSubmitOrder, lang, showAlert, showConfirm, settings = {}, onGoToTracking, setCurrentPage }) {
   const isEn = lang === 'en';
 
   const [paymentChoice, setPaymentChoice] = useState('deposit'); // 'deposit' (50%) or 'full' (100%)
@@ -615,12 +615,32 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
         </h2>
 
         {cart.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '1.1rem' }}>{t('orderEmpty', lang)}</p>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '24px' }}>{t('orderEmptySub', lang)}</p>
-            <a href="#catalog" className="btn btn-primary" onClick={(e) => { e.preventDefault(); window.location.hash = '#catalog'; }}>
-              {t('orderCatalogBtn', lang)}
-            </a>
+          <div style={{ textAlign: 'center', padding: '56px 20px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(22, 101, 52, 0.08)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <ShoppingCart size={32} />
+            </div>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '1.2rem', fontWeight: 800 }}>{t('orderEmpty', lang)}</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '28px', maxWidth: '420px', margin: '0 auto 28px' }}>{t('orderEmptySub', lang)}</p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                onClick={() => setCurrentPage ? setCurrentPage('catalog') : (window.location.hash = '#catalog')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 22px', fontSize: '0.95rem', cursor: 'pointer' }}
+              >
+                <Plus size={18} />
+                <span>{isEn ? "Add an item" : "Ajouter un article"}</span>
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-outline" 
+                onClick={() => setCurrentPage ? setCurrentPage('home') : (window.location.hash = '#home')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 20px', fontSize: '0.95rem', cursor: 'pointer' }}
+              >
+                <Home size={18} />
+                <span>{isEn ? "Back to Home" : "Retour à l'accueil"}</span>
+              </button>
+            </div>
           </div>
         ) : (
           <div>
@@ -680,10 +700,21 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
               ))}
             </div>
 
-            <div className="order-footer-bar">
-              <button type="button" className="btn btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={handleClearCart}>
-                {t('orderClear', lang)}
-              </button>
+            <div className="order-footer-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-outline" 
+                  onClick={() => setCurrentPage ? setCurrentPage('catalog') : (window.location.hash = '#catalog')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer' }}
+                >
+                  <Plus size={15} />
+                  <span>{isEn ? "Add another item" : "Ajouter un article"}</span>
+                </button>
+                <button type="button" className="btn btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', fontSize: '0.85rem', cursor: 'pointer' }} onClick={handleClearCart}>
+                  {t('orderClear', lang)}
+                </button>
+              </div>
               <div className="order-footer-total">
                 <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>{t('orderSubtotal', lang)}</div>
                 <div className="order-subtotal-val">
