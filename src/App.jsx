@@ -15,6 +15,7 @@ import ClientDashboard from './pages/ClientDashboard';
 import Ebooks from './pages/Ebooks';
 import TrackOrder from './pages/TrackOrder';
 import Formations from './pages/Formations';
+import ItemDetail from './pages/ItemDetail';
 
 // Initial Data
 import { initialProducts } from './data/initialProducts';
@@ -121,6 +122,17 @@ export default function App() {
   const handleGoToTracking = (orderId) => {
     setTrackingOrderId(orderId);
     setCurrentPage('track');
+  };
+  const [selectedDetailItem, setSelectedDetailItem] = useState(() => {
+    const saved = sessionStorage.getItem('bevulta_detail_item');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const handleViewDetail = (item, type = 'product') => {
+    const detail = { type, data: item };
+    setSelectedDetailItem(detail);
+    sessionStorage.setItem('bevulta_detail_item', JSON.stringify(detail));
+    setCurrentPage('item-detail');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const [cart, setCart] = useState([]);
   
@@ -1190,6 +1202,7 @@ export default function App() {
             addToCart={addToCart}
             showAlert={showAlert}
             settings={settings}
+            onViewDetail={handleViewDetail}
           />
         )}
         {currentPage === 'catalog' && (
@@ -1203,6 +1216,7 @@ export default function App() {
             setSelectedMotor={setSelectedMotor}
             showAlert={showAlert}
             showConfirm={showConfirm}
+            onViewDetail={handleViewDetail}
           />
         )}
         {currentPage === 'ebooks' && (
@@ -1214,6 +1228,7 @@ export default function App() {
             showAlert={showAlert} 
             settings={settings}
             addOrder={handleSubmitOrder}
+            onViewDetail={handleViewDetail}
           />
         )}
         {currentPage === 'formations' && (
@@ -1222,6 +1237,22 @@ export default function App() {
             showAlert={showAlert} 
             settings={settings} 
             addOrder={handleSubmitOrder} 
+            onViewDetail={handleViewDetail}
+          />
+        )}
+        {currentPage === 'item-detail' && (
+          <ItemDetail 
+            detail={selectedDetailItem}
+            setCurrentPage={setCurrentPage}
+            addToCart={addToCart}
+            cart={cart}
+            lang={lang}
+            showAlert={showAlert}
+            settings={settings}
+            addOrder={handleSubmitOrder}
+            onViewDetail={handleViewDetail}
+            allProducts={products}
+            allEbooks={ebooks}
           />
         )}
         {currentPage === 'services' && <Services lang={lang} />}
@@ -1267,153 +1298,6 @@ export default function App() {
         )}
         {(currentPage === 'client-dashboard' && user?.role !== 'client') && renderLogin()}
       </main>
-
-      {/* GLOBAL PRODUCT DETAILS CONFIGURATION MODAL */}
-      {selectedProduct && (
-        <div className="modal-overlay" style={{ animation: 'fadeIn 0.3s ease' }}>
-          <div className="modal-content" style={{ maxWidth: '850px', padding: '32px' }}>
-            <button 
-              className="modal-close" 
-              onClick={() => { setSelectedProduct(null); setSelectedMotor('Standard'); }}
-              style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.5rem', color: 'var(--text-muted)' }}
-            >
-              ×
-            </button>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '32px', marginTop: '16px' }} className="crud-grid">
-              {/* Product Image & Specs */}
-              <div>
-                <img 
-                  src={selectedProduct.image} 
-                  alt={selectedProduct.name} 
-                  style={{ width: '100%', height: '280px', objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-md)' }} 
-                />
-                
-                <div style={{ marginTop: '20px' }}>
-                  <h4 style={{ fontSize: '0.9rem', color: 'var(--secondary)', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px', marginBottom: '10px' }}>
-                    {lang === 'en' ? "Technical Specifications" : "Spécifications Techniques"}
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '2px 0', borderBottom: '1px dashed var(--border-subtle)' }}>
-                      <strong>{lang === 'en' ? "Category" : "Catégorie"}</strong>
-                      <span style={{ textAlign: 'right', marginLeft: '12px' }}>{selectedProduct.category}</span>
-                    </div>
-                    {selectedProduct.subcategory && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '2px 0', borderBottom: '1px dashed var(--border-subtle)' }}>
-                        <strong>Subcategory</strong>
-                        <span style={{ textAlign: 'right', marginLeft: '12px' }}>{selectedProduct.subcategory}</span>
-                      </div>
-                    )}
-                    {Object.entries(selectedProduct.specs || {}).map(([key, val]) => (
-                      <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '2px 0', borderBottom: '1px dashed var(--border-subtle)' }}>
-                        <strong>{key}</strong>
-                        <span style={{ textAlign: 'right', marginLeft: '12px' }}>{val}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Product Info & Cart Customization Actions */}
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <span className="badge badge-agro" style={{ marginBottom: '12px' }}>
-                    {selectedProduct.subcategory || selectedProduct.category}
-                  </span>
-                  
-                  <h2 style={{ fontSize: '1.6rem', color: 'var(--secondary)', marginBottom: '12px' }}>{selectedProduct.name}</h2>
-                  
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: '1.5', marginBottom: '20px' }}>
-                    {selectedProduct.description}
-                  </p>
-
-                  {/* Motor Configuration Option dropdown selector */}
-                  <div className="form-group" style={{ marginBottom: '16px' }}>
-                    <label className="form-label" style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold', fontSize: '0.8rem' }}>
-                      {lang === 'en' ? "Select Motorization option" : "Configurer la Motorisation Optionnelle"}
-                    </label>
-                    <select 
-                      className="form-input" 
-                      value={selectedMotor}
-                      onChange={(e) => setSelectedMotor(e.target.value)}
-                      style={{ cursor: 'pointer', padding: '10px 14px', fontSize: '0.88rem' }}
-                    >
-                      <option value="Standard">{lang === 'en' ? "Standard / base configuration" : "Standard (Configuration de base)"}</option>
-                      <option value="Moteur Électrique 5.5 kW">{lang === 'en' ? "Electric Motor 5.5 kW (+150,000 FCFA)" : "Moteur Électrique 5.5 kW (+150 000 FCFA)"}</option>
-                      <option value="Moteur Diesel Sifang 8 CV">{lang === 'en' ? "Diesel Motor Sifang 8 HP (+250,000 FCFA)" : "Moteur Diesel Sifang 8 CV (+250 000 FCFA)"}</option>
-                      <option value="Moteur Essence 13 CV">{lang === 'en' ? "Gasoline Motor 13 HP (+300,000 FCFA)" : "Moteur Essence 13 CV (+300 000 FCFA)"}</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  {/* Dynamic Pricing display box */}
-                  <div style={{ 
-                    backgroundColor: 'var(--bg-surface)', 
-                    padding: '12px 16px', 
-                    borderRadius: 'var(--radius-sm)', 
-                    border: '1px solid var(--border-subtle)', 
-                    marginBottom: '16px' 
-                  }}>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>
-                      {lang === 'en' ? "Estimated Price with Option" : "Estimation Prix avec Option"}
-                    </div>
-                    {selectedProduct.promoPriceFcfa && selectedMotor === 'Standard' && (
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textDecoration: 'line-through', marginBottom: '4px' }}>
-                        {selectedProduct.priceFcfa.toLocaleString()} FCFA ({selectedProduct.priceEur.toLocaleString()} €)
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
-                      <strong style={{ fontSize: '1.45rem', color: 'var(--primary)', fontFamily: 'var(--font-heading)' }}>
-                        {(
-                          selectedMotor === 'Standard' ? (selectedProduct.promoPriceFcfa || selectedProduct.priceFcfa) :
-                          selectedMotor.includes('5.5 kW') ? (selectedProduct.promoPriceFcfa || selectedProduct.priceFcfa) + 150000 :
-                          selectedMotor.includes('8 CV') ? (selectedProduct.promoPriceFcfa || selectedProduct.priceFcfa) + 250000 :
-                          selectedMotor.includes('13 CV') ? (selectedProduct.promoPriceFcfa || selectedProduct.priceFcfa) + 300000 :
-                          (selectedProduct.promoPriceFcfa || selectedProduct.priceFcfa)
-                        ).toLocaleString()} FCFA
-                      </strong>
-                      <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                        (≈ {(
-                          Math.round((
-                            selectedMotor === 'Standard' ? (selectedProduct.promoPriceFcfa || selectedProduct.priceFcfa) :
-                            selectedMotor.includes('5.5 kW') ? (selectedProduct.promoPriceFcfa || selectedProduct.priceFcfa) + 150000 :
-                            selectedMotor.includes('8 CV') ? (selectedProduct.promoPriceFcfa || selectedProduct.priceFcfa) + 250000 :
-                            selectedMotor.includes('13 CV') ? (selectedProduct.promoPriceFcfa || selectedProduct.priceFcfa) + 300000 :
-                            (selectedProduct.promoPriceFcfa || selectedProduct.priceFcfa)
-                          ) / 655.957)
-                        ).toLocaleString()} €)
-                      </span>
-                      {selectedProduct.promoPriceFcfa && (
-                        <span className="badge badge-special" style={{ fontSize: '0.62rem', padding: '1px 5px', textTransform: 'uppercase' }}>Promo</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <button 
-                      className="btn btn-primary" 
-                      onClick={handleAddWithMotor}
-                      style={{ flexGrow: 1, padding: '10px 20px' }}
-                    >
-                      <ShoppingCart size={16} />
-                      <span>{t('btnRequestQuote', lang)}</span>
-                    </button>
-                    
-                    <button 
-                      className="btn btn-outline" 
-                      onClick={() => { setSelectedProduct(null); setSelectedMotor('Standard'); }}
-                      style={{ padding: '10px 20px' }}
-                    >
-                      {lang === 'en' ? "Back" : "Retour"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <Footer setCurrentPage={setCurrentPage} lang={lang} settings={settings} />
 

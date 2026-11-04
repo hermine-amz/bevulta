@@ -18,14 +18,13 @@ import { t } from '../data/translations';
 import { EBOOK_CATEGORIES } from '../data/initialEbooks';
 import PaymentModal from '../components/PaymentModal';
 
-export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert, settings = {}, addOrder }) {
+export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert, settings = {}, addOrder, onViewDetail }) {
   const isEn = lang === 'en';
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [searchQuery, setSearchQuery] = useState("");
   const [onlyPromos, setOnlyPromos] = useState(false);
   const [onlyPacks, setOnlyPacks] = useState(false);
   const [sortBy, setSortBy] = useState("featured"); // featured | price-asc | price-desc | discount
-  const [selectedEbook, setSelectedEbook] = useState(null);
   const [paymentModalData, setPaymentModalData] = useState(null);
 
   // Filtered & sorted ebooks
@@ -382,448 +381,107 @@ export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert, setti
                 className="ebook-card"
                 style={{
                   background: 'var(--bg-card)',
-                  borderRadius: 'var(--radius-md)',
+                  borderRadius: '16px',
                   border: book.isPack 
                     ? '2px solid rgba(217, 119, 6, 0.4)' 
                     : '1px solid var(--border-subtle)',
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
-                  boxShadow: book.isPack 
-                    ? '0 12px 30px -10px rgba(217, 119, 6, 0.15)' 
-                    : '0 8px 24px -10px rgba(0,0,0,0.06)',
-                  transition: 'transform 0.25s ease, box-shadow 0.25s ease',
-                  position: 'relative'
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                 }}
               >
-                {/* Pack Banner Header */}
-                {book.isPack && (
-                  <div 
-                    style={{
-                      background: 'linear-gradient(90deg, #d97706 0%, #b45309 100%)',
-                      color: '#ffffff',
-                      padding: '6px 16px',
-                      fontSize: '0.75rem',
-                      fontWeight: 800,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between'
-                    }}
-                  >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Layers size={14} />
-                      PACK COMPLET ({book.includedBooks?.length || 2} LIVRES)
-                    </span>
-                    {discountPct > 0 && (
-                      <span style={{ background: '#ffffff', color: '#b45309', padding: '1px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800 }}>
-                        -{discountPct}% ÉCO
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Cover & Badges Section */}
-                <div style={{ position: 'relative', height: '220px', background: 'var(--bg-surface)', overflow: 'hidden' }}>
+                {/* Image Section */}
+                <div 
+                  style={{ position: 'relative', height: '180px', overflow: 'hidden', cursor: 'pointer' }}
+                  onClick={() => onViewDetail && onViewDetail(book, 'ebook')}
+                >
                   <img 
                     src={book.coverImage} 
                     alt={book.title}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      transition: 'transform 0.4s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
-
-                  {/* Gradient overlay for contrast */}
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.6) 100%)',
-                      pointerEvents: 'none'
-                    }} 
-                  />
-
-                  {/* Floating Badges */}
-                  <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span 
-                      style={{
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                        color: '#ffffff',
-                        backdropFilter: 'blur(4px)'
-                      }}
-                    >
+                  <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', gap: '6px' }}>
+                    <span style={{ padding: '3px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700, backgroundColor: 'rgba(15, 23, 42, 0.85)', color: '#ffffff' }}>
                       {book.category}
                     </span>
-
                     {book.badge && (
-                      <span 
-                        style={{
-                          padding: '4px 10px',
-                          borderRadius: '6px',
-                          fontSize: '0.72rem',
-                          fontWeight: 800,
-                          backgroundColor: book.isPack ? '#d97706' : 'var(--primary)',
-                          color: '#ffffff',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-                        }}
-                      >
+                      <span style={{ padding: '3px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800, backgroundColor: '#d97706', color: '#ffffff' }}>
                         {book.badge}
                       </span>
                     )}
                   </div>
-
-                  {/* Format & Pages Floating Tag */}
-                  <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#ffffff', fontSize: '0.78rem', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <FileText size={13} />
-                      {book.pages}
-                    </span>
-                    <span style={{ background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '4px', backdropFilter: 'blur(4px)', fontSize: '0.7rem' }}>
-                      PDF Numérique HD
-                    </span>
-                  </div>
                 </div>
 
                 {/* Content Section */}
-                <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  
+                <div style={{ padding: '18px', flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <h3 
                     style={{
-                      fontSize: '1.15rem',
+                      fontSize: '1.05rem',
                       fontWeight: 700,
                       color: 'var(--secondary)',
                       marginBottom: '8px',
                       lineHeight: 1.35,
-                      fontFamily: 'var(--font-heading)'
+                      cursor: 'pointer'
                     }}
+                    onClick={() => onViewDetail && onViewDetail(book, 'ebook')}
                   >
                     {book.title}
                   </h3>
 
-                  <p 
-                    style={{
-                      fontSize: '0.85rem',
-                      color: 'var(--text-secondary)',
-                      lineHeight: 1.5,
-                      marginBottom: '16px',
-                      flex: 1
-                    }}
-                  >
-                    {book.subtitle || book.description?.substring(0, 110) + '...'}
-                  </p>
-
-                  {/* Included books list if Pack */}
-                  {book.isPack && book.includedBooks && book.includedBooks.length > 0 && (
-                    <div 
-                      style={{
-                        background: 'var(--bg-surface)',
-                        borderRadius: 'var(--radius-sm)',
-                        padding: '12px',
-                        marginBottom: '16px',
-                        border: '1px dashed var(--border-subtle)'
-                      }}
-                    >
-                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#d97706', marginBottom: '8px', textTransform: 'uppercase' }}>
-                        {t('ebookIncludedBooks', lang)}
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {book.includedBooks.map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.78rem', color: 'var(--text-primary)' }}>
-                            <CheckCircle size={14} color="#16a34a" style={{ flexShrink: 0, marginTop: '2px' }} />
-                            <span>{item}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Pricing Box */}
-                  <div 
-                    style={{
-                      background: hasPromo ? 'rgba(217, 119, 6, 0.05)' : 'var(--bg-surface)',
-                      border: `1px solid ${hasPromo ? 'rgba(217, 119, 6, 0.2)' : 'var(--border-subtle)'}`,
-                      borderRadius: 'var(--radius-sm)',
-                      padding: '12px 14px',
-                      marginBottom: '16px'
-                    }}
-                  >
-                    {hasPromo ? (
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>
-                            {book.priceFcfa.toLocaleString()} FCFA ({book.priceEur.toLocaleString()} €)
-                          </span>
-                          <span 
-                            style={{
-                              background: '#ef4444',
-                              color: '#ffffff',
-                              fontSize: '0.68rem',
-                              fontWeight: 800,
-                              padding: '2px 6px',
-                              borderRadius: '4px'
-                            }}
-                          >
-                            ÉCONOMIE {(book.priceFcfa - book.promoPriceFcfa).toLocaleString()} FCFA
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--primary)', fontFamily: 'var(--font-heading)' }}>
-                            {book.promoPriceFcfa.toLocaleString()} FCFA
-                          </span>
-                          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                            (≈ {activePriceEur.toLocaleString()} €)
-                          </span>
-                          <span className="badge badge-special" style={{ fontSize: '0.62rem', padding: '2px 6px' }}>
-                            {t('ebookPromoBadge', lang)}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                        <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)', fontFamily: 'var(--font-heading)' }}>
-                          {book.priceFcfa.toLocaleString()} FCFA
-                        </span>
-                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                          ({book.priceEur.toLocaleString()} €)
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions Buttons */}
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      className="btn btn-outline"
-                      style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      title={isEn ? "View Details" : "Voir le sommaire et détails"}
-                      onClick={() => setSelectedEbook(book)}
-                    >
-                      <Eye size={16} />
-                    </button>
-
-                    <button
-                      className="btn btn-primary"
-                      style={{
-                        padding: '10px 14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                        color: '#ffffff',
-                        border: 'none',
-                        fontSize: '0.82rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 8px rgba(22, 163, 74, 0.25)'
-                      }}
-                      title={isEn ? "Direct Purchase & Instant Download" : "Paiement Mobile Money direct et téléchargement immédiat"}
-                      onClick={(e) => handleDirectBuy(book, e)}
-                    >
-                      <CreditCard size={15} />
-                      <span>{isEn ? "Buy" : "Acheter"}</span>
-                    </button>
-
-                    <button
-                      className={`btn ${inCart ? 'btn-outline' : 'btn-outline'}`}
-                      style={{
-                        flex: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        fontSize: '0.82rem',
-                        padding: '10px 8px',
-                        color: inCart ? 'var(--primary)' : 'inherit',
-                        borderColor: inCart ? 'var(--primary)' : 'var(--border-color)'
-                      }}
-                      onClick={(e) => handleAddToCart(book, e)}
-                    >
-                      <ShoppingCart size={15} />
-                      <span style={{ fontWeight: 600 }}>
-                        {inCart 
-                          ? (isEn ? "In Quote ✓" : "Au Devis ✓") 
-                          : (isEn ? "+ Devis" : "+ Devis")
-                        }
+                  <div style={{ marginTop: 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)', fontFamily: 'var(--font-heading)' }}>
+                        {(book.promoPriceFcfa || book.priceFcfa).toLocaleString()} FCFA
                       </span>
-                    </button>
-                  </div>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                        (≈ {(book.promoPriceEur || book.priceEur).toLocaleString()} €)
+                      </span>
+                      {hasPromo && (
+                        <span className="badge badge-special" style={{ fontSize: '0.6rem', padding: '1px 5px', textTransform: 'uppercase' }}>Promo</span>
+                      )}
+                    </div>
 
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        style={{ flex: 1, padding: '8px 12px', fontSize: '0.82rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}
+                        onClick={() => onViewDetail && onViewDetail(book, 'ebook')}
+                      >
+                        <span>{isEn ? "View details" : "Voir détails"}</span>
+                        <span>→</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{
+                          padding: '8px 14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                        onClick={(e) => handleDirectBuy(book, e)}
+                        title={isEn ? "Buy now" : "Acheter maintenant"}
+                      >
+                        <CreditCard size={15} />
+                        <span>{isEn ? "Buy" : "Acheter"}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* Global E-book Details & Preview Modal */}
-      {selectedEbook && (
-        <div className="modal-overlay" style={{ animation: 'fadeIn 0.25s ease' }}>
-          <div className="modal-content" style={{ maxWidth: '800px', padding: '32px' }}>
-            <button
-              className="modal-close"
-              onClick={() => setSelectedEbook(null)}
-              style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.5rem', color: 'var(--text-muted)' }}
-            >
-              ×
-            </button>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '28px', marginTop: '12px' }} className="crud-grid">
-              {/* Left Column: Cover & Quick specs */}
-              <div>
-                <img 
-                  src={selectedEbook.coverImage} 
-                  alt={selectedEbook.title} 
-                  style={{ width: '100%', height: '340px', objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }} 
-                />
-
-                <div style={{ marginTop: '16px', background: 'var(--bg-surface)', padding: '14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Format :</span>
-                    <strong>{selectedEbook.fileFormat}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Pages :</span>
-                    <strong>{selectedEbook.pages}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Langue :</span>
-                    <strong>{selectedEbook.language || 'Français'}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Auteur :</span>
-                    <strong>{selectedEbook.author || 'BEVULTA'}</strong>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Title, Description, Packs breakdown, Pricing & CTA */}
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
-                    <span className="badge badge-agro">{selectedEbook.category}</span>
-                    {selectedEbook.isPack && (
-                      <span className="badge badge-special" style={{ background: '#d97706', color: '#ffffff' }}>
-                        Pack de {selectedEbook.includedBooks?.length || 2} E-books
-                      </span>
-                    )}
-                  </div>
-
-                  <h2 style={{ fontSize: '1.5rem', color: 'var(--secondary)', marginBottom: '8px', lineHeight: 1.3 }}>
-                    {selectedEbook.title}
-                  </h2>
-
-                  <p style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.9rem', marginBottom: '16px' }}>
-                    {selectedEbook.subtitle}
-                  </p>
-
-                  <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '20px' }}>
-                    {selectedEbook.description}
-                  </div>
-
-                  {/* Included books breakdown if Pack */}
-                  {selectedEbook.isPack && selectedEbook.includedBooks && (
-                    <div style={{ background: 'var(--bg-surface)', padding: '16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', marginBottom: '20px' }}>
-                      <h4 style={{ fontSize: '0.85rem', color: '#d97706', marginBottom: '10px', textTransform: 'uppercase' }}>
-                        📚 Contenu détaillé de ce pack :
-                      </h4>
-                      <ul style={{ paddingLeft: '18px', margin: 0, fontSize: '0.83rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {selectedEbook.includedBooks.map((item, idx) => (
-                          <li key={idx}><strong>{item}</strong></li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Reassurance banner */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(22, 101, 52, 0.08)', padding: '10px 14px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '20px' }}>
-                    <Zap size={16} />
-                    <span>{t('ebookDigitalDeliveryNotice', lang)}</span>
-                  </div>
-                </div>
-
-                {/* Bottom Pricing & Checkout button */}
-                <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <div>
-                      {selectedEbook.promoPriceFcfa && (
-                        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>
-                          {selectedEbook.priceFcfa.toLocaleString()} FCFA ({selectedEbook.priceEur.toLocaleString()} €)
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                        <strong style={{ fontSize: '1.6rem', color: 'var(--primary)', fontFamily: 'var(--font-heading)' }}>
-                          {(selectedEbook.promoPriceFcfa || selectedEbook.priceFcfa).toLocaleString()} FCFA
-                        </strong>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                          (≈ {(selectedEbook.promoPriceEur || selectedEbook.priceEur).toLocaleString()} €)
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                      <button
-                        className="btn btn-primary"
-                        style={{
-                          padding: '12px 20px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                          color: '#ffffff',
-                          border: 'none',
-                          boxShadow: '0 4px 14px rgba(22, 163, 74, 0.3)'
-                        }}
-                        onClick={() => {
-                          const book = selectedEbook;
-                          setSelectedEbook(null);
-                          handleDirectBuy(book);
-                        }}
-                      >
-                        <CreditCard size={18} />
-                        <span style={{ fontWeight: 700 }}>
-                          {isEn ? "Pay with Mobile Money" : "Payer par Mobile Money"}
-                        </span>
-                      </button>
-
-                      <button
-                        className="btn btn-outline"
-                        style={{
-                          padding: '12px 20px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}
-                        onClick={() => {
-                          handleAddToCart(selectedEbook);
-                          setSelectedEbook(null);
-                        }}
-                      >
-                        <ShoppingCart size={18} />
-                        <span style={{ fontWeight: 700 }}>
-                          {selectedEbook.isPack ? (isEn ? "Add Pack to Quote" : "Ajouter au Devis") : (isEn ? "Add to Quote" : "Ajouter au Devis")}
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
         </div>
       )}
 

@@ -30,12 +30,12 @@ export default function Formations({
   lang = 'fr', 
   showAlert, 
   settings = {}, 
-  addOrder 
+  addOrder,
+  onViewDetail
 }) {
   const isEn = lang === 'en';
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFormation, setSelectedFormation] = useState(null); // For detailed syllabus view
   const [enrollModalFormation, setEnrollModalFormation] = useState(null); // For checkout / payment
 
   // Enrollment Form State
@@ -66,7 +66,6 @@ export default function Formations({
     setEnrollModalFormation(formation);
     setEnrollStep('form');
     setFormError('');
-    setSelectedFormation(null);
   };
 
   const handleProceedToPayment = (e) => {
@@ -299,7 +298,10 @@ export default function Formations({
               }}
             >
               {/* Cover Image & Badges */}
-              <div style={{ position: 'relative', height: '180px', overflow: 'hidden' }}>
+              <div 
+                style={{ position: 'relative', height: '180px', overflow: 'hidden', cursor: 'pointer' }}
+                onClick={() => onViewDetail && onViewDetail(formation, 'formation')}
+              >
                 <img 
                   src={formation.coverImage} 
                   alt={formation.title} 
@@ -338,47 +340,27 @@ export default function Formations({
               </div>
 
               {/* Card Body */}
-              <div style={{ padding: '22px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px', lineHeight: 1.3 }}>
+              <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                <h3 
+                  style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px', lineHeight: 1.3, cursor: 'pointer' }}
+                  onClick={() => onViewDetail && onViewDetail(formation, 'formation')}
+                >
                   {formation.title}
                 </h3>
-                <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5, marginBottom: '16px' }}>
+                <p style={{ fontSize: '0.84rem', color: '#64748b', lineHeight: 1.5, marginBottom: '14px' }}>
                   {formation.subtitle}
                 </p>
 
-                {/* Practical Details Pills */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '18px', fontSize: '0.82rem', color: '#334155' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Clock size={15} color="#15803d" />
-                    <span><strong>Durée :</strong> {formation.duration}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <MapPin size={15} color="#d97706" />
-                    <span><strong>Lieu :</strong> {formation.location}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Calendar size={15} color="#2563eb" />
-                    <span><strong>Session :</strong> {formation.nextSession}</span>
-                  </div>
-                </div>
-
-                {/* Program Modules Summary */}
-                <div style={{ 
-                  background: '#f8fafc', 
-                  padding: '12px 14px', 
-                  borderRadius: '10px', 
-                  border: '1px solid #edf2f7',
-                  marginBottom: '20px'
-                }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
-                    📚 Programme en 4 modules :
-                  </div>
-                  <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.78rem', color: '#334155', lineHeight: 1.5 }}>
-                    {formation.modules.slice(0, 3).map(m => (
-                      <li key={m.number}><strong>Mod. {m.number}:</strong> {m.title}</li>
-                    ))}
-                    <li style={{ color: '#166534', fontWeight: 600 }}>+ Module 4 & Travaux Pratiques</li>
-                  </ul>
+                {/* Practical Details: Duration & Session */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '18px', fontSize: '0.8rem', color: '#475569' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: '#f8fafc', padding: '4px 8px', borderRadius: '6px' }}>
+                    <Clock size={14} color="#15803d" />
+                    <strong>{formation.duration}</strong>
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: '#f8fafc', padding: '4px 8px', borderRadius: '6px' }}>
+                    <MapPin size={14} color="#d97706" />
+                    <span>{formation.location}</span>
+                  </span>
                 </div>
 
                 {/* Pricing & CTA */}
@@ -387,20 +369,20 @@ export default function Formations({
                     <div>
                       {formation.promoPriceFcfa ? (
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                          <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#166534' }}>
+                          <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#166534' }}>
                             {effectivePriceFcfa.toLocaleString()} FCFA
                           </span>
-                          <span style={{ fontSize: '0.85rem', color: '#94a3b8', textDecoration: 'line-through' }}>
+                          <span style={{ fontSize: '0.82rem', color: '#94a3b8', textDecoration: 'line-through' }}>
                             {formation.priceFcfa.toLocaleString()} FCFA
                           </span>
                         </div>
                       ) : (
-                        <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#166534' }}>
+                        <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#166534' }}>
                           {effectivePriceFcfa.toLocaleString()} FCFA
                         </span>
                       )}
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                        Env. {effectivePriceEur} € · Matériel & Attestation inclus
+                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                        Env. {effectivePriceEur} € · Attestation incluse
                       </div>
                     </div>
                   </div>
@@ -408,7 +390,7 @@ export default function Formations({
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button
                       type="button"
-                      onClick={() => setSelectedFormation(formation)}
+                      onClick={() => onViewDetail && onViewDetail(formation, 'formation')}
                       style={{
                         flex: 1,
                         padding: '10px 12px',
@@ -418,23 +400,28 @@ export default function Formations({
                         color: '#334155',
                         fontSize: '0.82rem',
                         fontWeight: 600,
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px'
                       }}
                     >
-                      {isEn ? "View Syllabus" : "Voir Programme"}
+                      <span>{isEn ? "View details" : "Voir détails"}</span>
+                      <span>→</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={(e) => handleOpenEnroll(formation, e)}
                       style={{
-                        flex: 2,
-                        padding: '10px 14px',
+                        flex: 1,
+                        padding: '10px 12px',
                         borderRadius: '10px',
                         border: 'none',
                         background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
                         color: '#ffffff',
-                        fontSize: '0.85rem',
+                        fontSize: '0.82rem',
                         fontWeight: 700,
                         cursor: 'pointer',
                         display: 'flex',
@@ -444,8 +431,8 @@ export default function Formations({
                         boxShadow: '0 4px 12px rgba(22, 163, 74, 0.25)'
                       }}
                     >
-                      <GraduationCap size={16} />
-                      <span>{isEn ? "Enroll & Get Syllabus" : "S'inscrire & Payer"}</span>
+                      <GraduationCap size={15} />
+                      <span>{isEn ? "Enroll" : "S'inscrire"}</span>
                     </button>
                   </div>
                 </div>
@@ -455,145 +442,6 @@ export default function Formations({
           );
         })}
       </div>
-
-      {/* DETAIL MODAL : FULL SYLLABUS */}
-      {selectedFormation && (
-        <div className="modal-overlay" style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.75)',
-          backdropFilter: 'blur(5px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '20px',
-            maxWidth: '750px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            padding: '32px',
-            position: 'relative',
-            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
-          }}>
-            <button 
-              onClick={() => setSelectedFormation(null)}
-              style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px',
-                background: '#f1f5f9',
-                border: 'none',
-                borderRadius: '50%',
-                width: '36px',
-                height: '36px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: '#64748b'
-              }}
-            >
-              <X size={20} />
-            </button>
-
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#dcfce7', color: '#166534', padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700, marginBottom: '12px' }}>
-              <Award size={14} />
-              <span>{selectedFormation.category} · {selectedFormation.badge}</span>
-            </div>
-
-            <h2 style={{ fontSize: '1.5rem', color: '#0f172a', fontWeight: 800, marginBottom: '8px' }}>
-              {selectedFormation.title}
-            </h2>
-            <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '24px' }}>
-              {selectedFormation.subtitle}
-            </p>
-
-            <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px', fontSize: '0.88rem', lineHeight: 1.6, color: '#334155' }}>
-              <p style={{ margin: 0 }}>{selectedFormation.description}</p>
-            </div>
-
-            {/* Modules detail */}
-            <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>
-              📖 Programme Pédagogique Détaillé :
-            </h4>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '28px' }}>
-              {selectedFormation.modules.map(mod => (
-                <div key={mod.number} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div style={{ fontWeight: 800, color: '#166534', fontSize: '0.95rem' }}>
-                      Module {mod.number} : {mod.title}
-                    </div>
-                    <span style={{ fontSize: '0.78rem', background: '#f1f5f9', color: '#475569', padding: '3px 8px', borderRadius: '6px', fontWeight: 600 }}>
-                      {mod.duration}
-                    </span>
-                  </div>
-                  <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '0.85rem', color: '#475569', lineHeight: 1.6 }}>
-                    {mod.points.map((pt, i) => (
-                      <li key={i}>{pt}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            {/* Included Perks */}
-            <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', marginBottom: '12px' }}>
-              ✅ Tout ce qui est inclus dans votre inscription :
-            </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px', marginBottom: '32px' }}>
-              {selectedFormation.included.map((item, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#15803d', background: '#f0fdf4', padding: '10px 12px', borderRadius: '8px' }}>
-                  <Check size={16} color="#16a34a" />
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Modal Bottom CTA */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
-              <div>
-                <span style={{ fontSize: '1.35rem', fontWeight: 800, color: '#166534' }}>
-                  {(selectedFormation.promoPriceFcfa || selectedFormation.priceFcfa).toLocaleString()} FCFA
-                </span>
-                <span style={{ fontSize: '0.85rem', color: '#64748b', marginLeft: '6px' }}>
-                  ({selectedFormation.duration})
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleOpenEnroll(selectedFormation)}
-                style={{
-                  padding: '12px 24px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                  color: '#ffffff',
-                  fontSize: '0.95rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  boxShadow: '0 4px 14px rgba(22, 163, 74, 0.3)'
-                }}
-              >
-                <GraduationCap size={18} />
-                <span>{isEn ? "Proceed to Enrollment" : "Valider mon inscription"}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ENROLLMENT & PAYMENT MODAL */}
       {enrollModalFormation && (

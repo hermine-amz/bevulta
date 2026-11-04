@@ -21,7 +21,17 @@ import {
 import { t } from '../data/translations';
 import { defaultSettings } from '../data/defaultSettings';
 
-export default function Home({ setCurrentPage, lang, products, setSelectedProduct, ebooks = [], addToCart, showAlert, settings = defaultSettings }) {
+export default function Home({ 
+  setCurrentPage, 
+  lang, 
+  products, 
+  setSelectedProduct, 
+  ebooks = [], 
+  addToCart, 
+  showAlert, 
+  settings = defaultSettings,
+  onViewDetail
+}) {
   const activeSettings = { ...defaultSettings, ...(settings || {}) };
   const [selectedCountry, setSelectedCountry] = useState('benin');
   const isEn = lang === 'en';
@@ -547,7 +557,7 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
               <div 
                 className="product-img-wrapper" 
                 style={{ cursor: 'pointer' }}
-                onClick={() => setSelectedProduct(product)}
+                onClick={() => onViewDetail ? onViewDetail(product, 'product') : (setSelectedProduct ? setSelectedProduct(product) : setCurrentPage('catalog'))}
               >
                 <img src={product.image} alt={product.name} />
                 <span className="product-category-tag badge badge-agro" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '85%' }}>
@@ -558,7 +568,7 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
               <div className="product-info">
                 <h3 
                   style={{ cursor: 'pointer' }} 
-                  onClick={() => setSelectedProduct(product)}
+                  onClick={() => onViewDetail ? onViewDetail(product, 'product') : (setSelectedProduct ? setSelectedProduct(product) : setCurrentPage('catalog'))}
                 >
                   {product.name}
                 </h3>
@@ -589,7 +599,7 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
 
                   <button
                     className="btn btn-primary"
-                    onClick={() => setSelectedProduct(product)}
+                    onClick={() => onViewDetail ? onViewDetail(product, 'product') : (setSelectedProduct ? setSelectedProduct(product) : setCurrentPage('catalog'))}
                     style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', justifyContent: 'center', marginTop: '12px' }}
                   >
                     <span>{isEn ? "Configure & View Details" : "Configurer & Voir Détails"}</span>
@@ -686,7 +696,10 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
                 )}
 
                 {/* Cover Image */}
-                <div style={{ position: 'relative', height: '190px', background: 'var(--bg-surface)' }}>
+                <div 
+                  style={{ position: 'relative', height: '190px', background: 'var(--bg-surface)', cursor: 'pointer' }}
+                  onClick={() => onViewDetail ? onViewDetail(book, 'ebook') : setCurrentPage('ebooks')}
+                >
                   <img 
                     src={book.coverImage} 
                     alt={book.title}
@@ -706,30 +719,15 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
 
                 {/* Details */}
                 <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <h3 style={{ fontSize: '1.1rem', color: 'var(--secondary)', marginBottom: '6px', fontWeight: 700 }}>
+                  <h3 
+                    style={{ fontSize: '1.1rem', color: 'var(--secondary)', marginBottom: '6px', fontWeight: 700, cursor: 'pointer' }}
+                    onClick={() => onViewDetail ? onViewDetail(book, 'ebook') : setCurrentPage('ebooks')}
+                  >
                     {book.title}
                   </h3>
                   <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.45, marginBottom: '14px', flex: 1 }}>
                     {book.subtitle || book.description?.substring(0, 90) + '...'}
                   </p>
-
-                  {/* Included books if Pack */}
-                  {book.isPack && book.includedBooks && book.includedBooks.length > 0 && (
-                    <div style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: 'var(--radius-sm)', marginBottom: '14px', fontSize: '0.76rem' }}>
-                      <strong style={{ color: '#d97706', display: 'block', marginBottom: '4px' }}>Inclus dans le pack :</strong>
-                      {book.includedBooks.slice(0, 3).map((item, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)' }}>
-                          <CheckCircle size={12} color="#16a34a" />
-                          <span>{item}</span>
-                        </div>
-                      ))}
-                      {book.includedBooks.length > 3 && (
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: '2px' }}>
-                          + {book.includedBooks.length - 3} autre(s) guide(s)...
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   {/* Price Box */}
                   <div style={{ background: hasPromo ? 'rgba(217, 119, 6, 0.05)' : 'var(--bg-surface)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', marginBottom: '14px' }}>
@@ -763,10 +761,11 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button
                       className="btn btn-outline"
-                      style={{ padding: '8px 12px', fontSize: '0.82rem' }}
-                      onClick={() => setCurrentPage('ebooks')}
+                      style={{ padding: '8px 12px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      onClick={() => onViewDetail ? onViewDetail(book, 'ebook') : setCurrentPage('ebooks')}
                     >
-                      Détails
+                      <span>Détails</span>
+                      <span>→</span>
                     </button>
                     <button
                       className="btn btn-primary"
@@ -790,7 +789,7 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
                       }}
                     >
                       <ShoppingCart size={15} style={{ marginRight: '6px' }} />
-                      <span>{book.isPack ? "Commander ce Pack" : "Commander"}</span>
+                      <span>{book.isPack ? "Commander" : "Commander"}</span>
                     </button>
                   </div>
                 </div>

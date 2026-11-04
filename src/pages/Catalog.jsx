@@ -9,9 +9,8 @@ export default function Catalog({
   cart, 
   removeFromCart, 
   lang,
-  setSelectedProduct,
-  setSelectedMotor,
-  showAlert
+  showAlert,
+  onViewDetail
 }) {
   const [activeTab, setActiveTab] = useState('tous');
   const [activeSubcategory, setActiveSubcategory] = useState('tous');
@@ -305,13 +304,13 @@ export default function Catalog({
       ) : (
         <div className="grid grid-3">
           {sortedProducts.map(product => (
-            <div key={product.id} className="product-card">
+            <div key={product.id} className="product-card" style={{ display: 'flex', flexDirection: 'column' }}>
               <div 
                 className="product-img-wrapper" 
-                style={{ cursor: 'pointer' }}
-                onClick={() => { setSelectedProduct(product); setSelectedMotor('Standard'); }}
+                style={{ cursor: 'pointer', height: '220px', position: 'relative' }}
+                onClick={() => onViewDetail && onViewDetail(product, 'product')}
               >
-                <img src={product.image} alt={product.name} />
+                <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <span className={`product-category-tag badge ${
                   product.category === 'Matériels de transformation agro-alimentaire' ? 'badge-agro' :
                   product.category === 'Matériels de BTP & Hôpitaux / Construction métallique' ? 'badge-btp' :
@@ -321,45 +320,45 @@ export default function Catalog({
                   {getSubcategoryLabel(product.subcategory) || getCategoryLabel(product.category)}
                 </span>
               </div>
-              <div className="product-info" style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '20px' }}>
+              <div className="product-info" style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '18px' }}>
                 <h3 
-                  style={{ cursor: 'pointer', marginBottom: '12px' }} 
-                  onClick={() => { setSelectedProduct(product); setSelectedMotor('Standard'); }}
+                  style={{ cursor: 'pointer', marginBottom: '8px', fontSize: '1.05rem', lineHeight: 1.3, fontWeight: 700 }} 
+                  onClick={() => onViewDetail && onViewDetail(product, 'product')}
                 >
                   {product.name}
                 </h3>
                 
                 <div style={{ marginTop: 'auto' }}>
-                  <div className="product-price" style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '16px' }}>
-                    {product.promoPriceFcfa ? (
-                      <>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'baseline' }}>
-                          <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{product.promoPriceFcfa.toLocaleString()} FCFA</span>
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                            ({(product.promoPriceEur || Math.round(product.promoPriceFcfa / 655.957)).toLocaleString()} €)
-                          </span>
-                          <span className="badge badge-special" style={{ fontSize: '0.62rem', padding: '1px 5px', textTransform: 'uppercase' }}>Promo</span>
-                        </div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>
-                          {product.priceFcfa.toLocaleString()} FCFA ({product.priceEur.toLocaleString()} €)
-                        </div>
-                      </>
-                    ) : (
-                      <div>
-                        <span>{product.priceFcfa.toLocaleString()} FCFA </span>
-                        <span className="product-price-alt">({product.priceEur.toLocaleString()} €)</span>
-                      </div>
+                  <div className="product-price" style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                    <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '1.15rem' }}>
+                      {(product.promoPriceFcfa || product.priceFcfa).toLocaleString()} FCFA
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      (≈ {(product.promoPriceEur || product.priceEur).toLocaleString()} €)
+                    </span>
+                    {product.promoPriceFcfa && (
+                      <span className="badge badge-special" style={{ fontSize: '0.6rem', padding: '1px 5px', textTransform: 'uppercase' }}>Promo</span>
                     )}
                   </div>
 
-                  <div className="product-actions">
+                  <div className="product-actions" style={{ display: 'flex', gap: '8px' }}>
                     <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={() => onViewDetail && onViewDetail(product, 'product')}
+                      style={{ flexGrow: 1, padding: '8px 12px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}
+                    >
+                      <span>{isEn ? "View details" : "Voir détails"}</span>
+                      <span>→</span>
+                    </button>
+                    <button
+                      type="button"
                       className={`btn ${isInCart(product.id) ? 'btn-secondary' : 'btn-primary'}`}
                       onClick={() => handleCartClick(product)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px', flexGrow: 1, justifyContent: 'center' }}
+                      style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                      title={isInCart(product.id) ? t('btnInQuote', lang) : t('btnRequestQuote', lang)}
                     >
                       {isInCart(product.id) ? <Check size={16} /> : <ShoppingCart size={16} />}
-                      <span>{isInCart(product.id) ? t('btnInQuote', lang) : t('btnRequestQuote', lang)}</span>
                     </button>
                   </div>
                 </div>
