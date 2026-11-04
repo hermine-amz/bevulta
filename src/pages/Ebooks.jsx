@@ -18,7 +18,7 @@ import { t } from '../data/translations';
 import { EBOOK_CATEGORIES } from '../data/initialEbooks';
 import PaymentModal from '../components/PaymentModal';
 
-export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert, settings = {} }) {
+export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert, settings = {}, addOrder }) {
   const isEn = lang === 'en';
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [searchQuery, setSearchQuery] = useState("");
@@ -878,8 +878,33 @@ export default function Ebooks({ ebooks, addToCart, cart, lang, showAlert, setti
         paymentData={paymentModalData}
         settings={settings}
         lang={lang}
-        onConfirmPayment={() => {
-          showAlert(lang === "fr" ? "Paiement en cours de vérification. Merci !" : "Payment under verification. Thank you!");
+        onConfirmPayment={(buyerData) => {
+          if (addOrder && paymentModalData) {
+            const ebookOrder = {
+              id: paymentModalData.orderId || `EBK-${Date.now().toString().slice(-6)}`,
+              date: new Date().toISOString().split('T')[0],
+              clientName: buyerData?.buyerName || 'Client E-book',
+              email: buyerData?.buyerEmail || '',
+              phone: buyerData?.buyerPhone || '',
+              country: 'Bénin',
+              company: 'Particulier / Auto-entrepreneur',
+              address: 'Achat direct E-book (Mobile Money)',
+              notes: `Achat direct E-book : ${paymentModalData.itemTitle} (${buyerData?.method || 'Mobile Money'})`,
+              status: 'pending',
+              subtotalFcfa: paymentModalData.amountFcfa || 0,
+              totalFcfa: paymentModalData.amountFcfa || 0,
+              totalEur: paymentModalData.amountEur || 0,
+              items: [{
+                id: `ebook-${paymentModalData.ebook?.id || 1}`,
+                name: `[E-book] ${paymentModalData.itemTitle}`,
+                quantity: 1,
+                priceFcfa: paymentModalData.amountFcfa || 0,
+                priceEur: paymentModalData.amountEur || 0
+              }]
+            };
+            addOrder(ebookOrder);
+          }
+          showAlert(lang === "fr" ? "Paiement en cours de vérification. Votre commande a été transmise à l'atelier !" : "Payment under verification. Your order has been sent to the workshop!");
         }}
       />
     </div>

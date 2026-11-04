@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus, Trash2, ShieldCheck, CheckCircle, FileText, CreditCard, Download } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, ShieldCheck, CheckCircle, FileText, CreditCard, Download, Wrench, MessageCircle } from 'lucide-react';
 import { initiatePayment } from '../services/paymentService';
 import { downloadWatermarkedPdf } from '../services/pdfWatermarkService';
 import PaymentModal from '../components/PaymentModal';
@@ -7,8 +7,10 @@ import PhoneInputWithCountry from '../components/PhoneInputWithCountry';
 import CountrySelect from '../components/CountrySelect';
 import { t } from '../data/translations';
 
-export default function Order({ cart, updateQty, removeFromCart, clearCart, onSubmitOrder, lang, showAlert, showConfirm, settings = {} }) {
+export default function Order({ cart, updateQty, removeFromCart, clearCart, onSubmitOrder, lang, showAlert, showConfirm, settings = {}, onGoToTracking }) {
   const isEn = lang === 'en';
+
+  const [paymentChoice, setPaymentChoice] = useState('deposit'); // 'deposit' (50%) or 'full' (100%)
 
   const handleClearCart = () => {
     if (showConfirm) {
@@ -58,12 +60,21 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
     }
   };
 
-  const handlePayOrder = () => {
+  const handlePayOrder = (forcedAmount = null) => {
     if (!createdOrder) return;
     const hasEbooks = createdOrder.items.some(i => i.isEbook || i.category?.toLowerCase().includes('ebook'));
+    const isOnlyEbooks = createdOrder.items.every(i => i.isEbook || i.category?.toLowerCase().includes('ebook'));
+    
+    // If machines are in the cart and deposit is chosen, calculate 50%
+    const chosenDeposit = !isOnlyEbooks && paymentChoice === 'deposit';
+    const amount = forcedAmount || (chosenDeposit ? Math.round(createdOrder.totalFcfa * 0.5) : createdOrder.totalFcfa);
+    const title = chosenDeposit 
+      ? `Acompte 50% Commande #${createdOrder.id}` 
+      : `Paiement Intégral Commande #${createdOrder.id}`;
+
     initiatePayment({
-      amountFcfa: createdOrder.totalFcfa,
-      itemTitle: `Commande #${createdOrder.id}`,
+      amountFcfa: amount,
+      itemTitle: title,
       orderId: createdOrder.id,
       clientInfo: createdOrder,
       settings,
@@ -76,6 +87,8 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
       onManualMoMo: (data) => {
         setPaymentModalData({
           ...data,
+          amountFcfa: amount,
+          itemTitle: title,
           isEbook: hasEbooks,
           ebook: hasEbooks ? createdOrder.items.find(i => i.isEbook || i.category?.toLowerCase().includes('ebook')) : null
         });
@@ -138,6 +151,7 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
     onSubmitOrder(newOrder);
     setCreatedOrder(newOrder);
     setOrderSuccess(true);
+    sessionStorage.setItem('bevulta_last_order_id', newOrder.id);
     clearCart();
     
     // Reset form
@@ -153,6 +167,9 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
   };
 
   if (orderSuccess && createdOrder) {
+    const isOnlyEbooks = createdOrder.items.every(i => i.isEbook || i.category?.toLowerCase().includes('ebook'));
+    const depositAmt = Math.round(createdOrder.totalFcfa * 0.5);
+
     return (
       <>
         <div className="order-success-page">
@@ -177,33 +194,137 @@ export default function Order({ cart, updateQty, removeFromCart, clearCart, onSu
             textAlign: "center",
             boxShadow: "0 4px 14px rgba(22, 101, 52, 0.08)"
           }}>
-            <h4 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#166534", margin: "0 0 6px 0" }}>
-              {isEn ? "Pay Online or by Mobile Money" : "Régler maintenant par Mobile Money / Carte"}
+            <h4 style={{ fontSize: "1.18rem", fontWeight: 900, color: "#166534", margin: "0 0 6px 0" }}>
+              {isEn ? "Pay Online & Launch Manufacturing" : "Régler en ligne & Lancer la fabrication"}
             </h4>
             <p style={{ fontSize: "0.85rem", color: "#475569", margin: "0 0 16px 0" }}>
               {isEn ? "Fast and secure payment via MTN MoMo, Moov Money, Wave, or Bank Card." : "Réglez directement votre acompte ou commande par MTN MoMo, Moov Money, Wave ou Carte."}
             </p>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handlePayOrder}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "12px 28px",
-                fontSize: "0.95rem",
-                fontWeight: 800,
-                background: "#16a34a",
-                border: "none",
-                borderRadius: "10px",
-                cursor: "pointer",
-                boxShadow: "0 2px 8px rgba(22, 163, 74, 0.3)"
-              }}
-            >
-              <CreditCard size={18} />
-              <span>{isEn ? "Pay Now" : "Payer Maintenant"} ({createdOrder.totalFcfa.toLocaleString()} FCFA)</span>
-            </button>
+
+            {/* Payment Mode Selector if contains machines */}
+            {!isOnlyEbooks && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', maxWidth: '520px', margin: '0 auto 18px', textAlign: 'left' }}>
+                <div 
+                  onClick={() => setPaymentChoice('deposit')}
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    border: paymentChoice === 'deposit' ? '2px solid #16a34a' : '1px solid #cbd5e1',
+                    background: paymentChoice === 'deposit' ? '#ffffff' : '#f8fafc',
+                    cursor: 'pointer',
+                    boxShadow: paymentChoice === 'deposit' ? '0 2px 8px rgba(22,163,74,0.15)' : 'none'
+                  }}
+                >
+                  <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>
+                    {isEn ? "Option 1 (Recommended)" : "Option 1 (Recommandée)"}
+                  </div>
+                  <div style={{ fontWeight: 900, color: '#166534', fontSize: '1rem', marginTop: '2px' }}>
+                    {isEn ? "50% Production Deposit" : "Acompte 50% Atelier"}
+                  </div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a' }}>
+                    {depositAmt.toLocaleString()} FCFA
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px' }}>
+                    {isEn ? "Balance due at delivery" : "Solde dû à la livraison"}
+                  </div>
+                </div>
+
+                <div 
+                  onClick={() => setPaymentChoice('full')}
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    border: paymentChoice === 'full' ? '2px solid #16a34a' : '1px solid #cbd5e1',
+                    background: paymentChoice === 'full' ? '#ffffff' : '#f8fafc',
+                    cursor: 'pointer',
+                    boxShadow: paymentChoice === 'full' ? '0 2px 8px rgba(22,163,74,0.15)' : 'none'
+                  }}
+                >
+                  <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>
+                    {isEn ? "Option 2" : "Option 2"}
+                  </div>
+                  <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '1rem', marginTop: '2px' }}>
+                    {isEn ? "100% Full Payment" : "Paiement Intégral 100%"}
+                  </div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a' }}>
+                    {createdOrder.totalFcfa.toLocaleString()} FCFA
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px' }}>
+                    {isEn ? "Complete settlement" : "Règlement complet"}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => handlePayOrder()}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "13px 26px",
+                  fontSize: "0.95rem",
+                  fontWeight: 900,
+                  background: "#16a34a",
+                  border: "none",
+                  borderRadius: "10px",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(22, 163, 74, 0.3)"
+                }}
+              >
+                <CreditCard size={18} />
+                <span>
+                  {paymentChoice === 'deposit' && !isOnlyEbooks
+                    ? `${isEn ? "Pay 50% Deposit" : "Payer l'Acompte 50%"} (${depositAmt.toLocaleString()} FCFA)`
+                    : `${isEn ? "Pay Full Total" : "Payer la Totalité"} (${createdOrder.totalFcfa.toLocaleString()} FCFA)`}
+                </span>
+              </button>
+
+              {onGoToTracking && (
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => onGoToTracking(createdOrder.id)}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "13px 22px",
+                    fontSize: "0.92rem",
+                    fontWeight: 800,
+                    borderRadius: "10px",
+                    cursor: "pointer"
+                  }}
+                >
+                  <Wrench size={18} color="#166534" />
+                  <span>{isEn ? "Track Machine Manufacturing" : "Suivre la fabrication en direct"}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Direct WhatsApp workshop confirmation */}
+            <div style={{ marginTop: '16px' }}>
+              <a
+                href={`https://wa.me/${(settings?.whatsappNumber || '22997699178').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Bonjour BEVULTA, je viens d'enregistrer ma commande N° ${createdOrder.id} pour un montant de ${createdOrder.totalFcfa.toLocaleString()} FCFA (${createdOrder.items?.map(i => `${i.quantity}x ${i.name}`).join(', ')}). Destination : ${createdOrder.country}. Voici mon dossier.`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: '#166534',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  textDecoration: 'none'
+                }}
+              >
+                <MessageCircle size={15} />
+                <span>{isEn ? "Transmit quotation to workshop via WhatsApp" : "Transmettre le devis à l'atelier par WhatsApp"}</span>
+              </a>
+            </div>
           </div>
 
           {/* E-books Direct Download Section (Anti-Sharing Watermarked) */}

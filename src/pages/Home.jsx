@@ -279,6 +279,15 @@ export default function Home({ setCurrentPage, lang, products, setSelectedProduc
                 <GraduationCap size={18} />
                 <span>{activeSettings.heroCtaSecondary || (isEn ? "Our Trainings" : "Nos Formations")}</span>
               </button>
+
+              <button 
+                className="btn btn-outline"
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(22, 101, 52, 0.05)', borderColor: 'rgba(22, 101, 52, 0.25)', color: '#166534' }}
+                onClick={() => setCurrentPage('track')}
+              >
+                <Wrench size={18} />
+                <span>{isEn ? "Track Order" : "Suivre ma Commande"}</span>
+              </button>
             </div>
           </div>
 

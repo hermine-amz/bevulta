@@ -175,6 +175,9 @@ export const translations = {
     orderRecapInstructions: "Une fois le paiement effectué, veuillez envoyer le reçu de transfert par e-mail ou WhatsApp en précisant votre référence de devis.",
     btnPrintInvoice: "Imprimer le Devis",
     btnReturnSite: "Retourner au site",
+    navTrack: "Suivre ma Machine",
+    trackTitle: "Suivi de Fabrication & Livraison",
+    trackDesc: "Entrez votre numéro de dossier ou numéro de téléphone pour suivre l'avancement de votre machine en temps réel.",
 
     // Login Page
     loginTitle: "Se Connecter",
@@ -393,6 +396,9 @@ export const translations = {
     orderRecapInstructions: "Once payment is made, please send the transfer receipt by email or WhatsApp stating your quote reference.",
     btnPrintInvoice: "Print Quote",
     btnReturnSite: "Return to site",
+    navTrack: "Track Machine",
+    trackTitle: "Manufacturing & Delivery Tracking",
+    trackDesc: "Enter your quote number or phone number to track your machine in real-time.",
 
     // Login Page
     loginTitle: "Login",

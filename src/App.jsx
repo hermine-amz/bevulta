@@ -13,6 +13,7 @@ import Order from './pages/Order';
 import AdminDashboard from './pages/AdminDashboard';
 import ClientDashboard from './pages/ClientDashboard';
 import Ebooks from './pages/Ebooks';
+import TrackOrder from './pages/TrackOrder';
 
 // Initial Data
 import { initialProducts } from './data/initialProducts';
@@ -115,6 +116,11 @@ export default function App() {
   useEffect(() => {
     sessionStorage.setItem('bevulta_page', currentPage);
   }, [currentPage]);
+  const [trackingOrderId, setTrackingOrderId] = useState('');
+  const handleGoToTracking = (orderId) => {
+    setTrackingOrderId(orderId);
+    setCurrentPage('track');
+  };
   const [cart, setCart] = useState([]);
   
   // Translation & Theme states
@@ -144,8 +150,14 @@ export default function App() {
     const saved = localStorage.getItem('bevulta_ebooks');
     return saved ? JSON.parse(saved) : initialEbooks;
   });
-  const [orders, setOrders] = useState([]);
-  const [messages, setMessages] = useState([]);
+  const [orders, setOrders] = useState(() => {
+    const saved = localStorage.getItem('bevulta_orders');
+    return saved ? JSON.parse(saved) : initialOrders;
+  });
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem('bevulta_messages');
+    return saved ? JSON.parse(saved) : initialMessages;
+  });
   const [settings, setSettings] = useState(() => {
     const saved = localStorage.getItem('bevulta_settings');
     return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
@@ -251,12 +263,12 @@ export default function App() {
           if (saved) setProducts(JSON.parse(saved));
         }
 
-        // Fetch orders and items
+        // Fetch orders and items with dual persistence
         const { data: ordData, error: ordErr } = await supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false });
-        if (!ordErr && ordData) {
-          setOrders(ordData.map(o => ({
+        if (!ordErr && ordData && ordData.length > 0) {
+          const mappedOrders = ordData.map(o => ({
             id: o.id,
-            date: o.created_at.split('T')[0],
+            date: o.created_at ? o.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
             clientName: o.client_name,
             email: o.email,
             phone: o.phone,
@@ -268,25 +280,44 @@ export default function App() {
             subtotalFcfa: o.subtotal_fcfa,
             totalFcfa: o.total_fcfa,
             totalEur: o.total_eur,
-            items: o.order_items.map(item => ({
+            items: (o.order_items || []).map(item => ({
               id: item.product_id,
-              name: "Product #" + item.product_id, // We'd ideally join with products, but this works for now or we map it from state
+              name: "Product #" + item.product_id,
               quantity: item.quantity,
               priceFcfa: item.price_fcfa,
               priceEur: item.price_eur
             }))
-          })));
+          }));
+          setOrders(mappedOrders);
+          localStorage.setItem('bevulta_orders', JSON.stringify(mappedOrders));
+        } else if (!ordErr && ordData && ordData.length === 0) {
+          const saved = localStorage.getItem('bevulta_orders');
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              if (parsed && parsed.length > 0) setOrders(parsed);
+            } catch (e) {}
+          }
         } else if (ordErr) {
           console.warn("Supabase fetch failed for orders:", ordErr.message);
-          setOrders(initialOrders);
+          const saved = localStorage.getItem('bevulta_orders');
+          if (saved) {
+            try {
+              setOrders(JSON.parse(saved));
+            } catch (e) {
+              setOrders(initialOrders);
+            }
+          } else {
+            setOrders(initialOrders);
+          }
         }
 
-        // Fetch messages
+        // Fetch messages with dual persistence
         const { data: msgData, error: msgErr } = await supabase.from('messages').select('*').order('created_at', { ascending: false });
-        if (!msgErr && msgData) {
-          setMessages(msgData.map(m => ({
+        if (!msgErr && msgData && msgData.length > 0) {
+          const mappedMsgs = msgData.map(m => ({
             id: m.id,
-            date: m.created_at.split('T')[0],
+            date: m.created_at ? m.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
             name: m.name,
             email: m.email,
             phone: m.phone,
@@ -297,10 +328,29 @@ export default function App() {
             ticketRef: m.ticket_ref,
             adminReply: m.admin_reply,
             replyDate: m.reply_date
-          })));
+          }));
+          setMessages(mappedMsgs);
+          localStorage.setItem('bevulta_messages', JSON.stringify(mappedMsgs));
+        } else if (!msgErr && msgData && msgData.length === 0) {
+          const saved = localStorage.getItem('bevulta_messages');
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              if (parsed && parsed.length > 0) setMessages(parsed);
+            } catch (e) {}
+          }
         } else if (msgErr) {
           console.warn("Supabase fetch failed for messages:", msgErr.message);
-          setMessages(initialMessages);
+          const saved = localStorage.getItem('bevulta_messages');
+          if (saved) {
+            try {
+              setMessages(JSON.parse(saved));
+            } catch (e) {
+              setMessages(initialMessages);
+            }
+          } else {
+            setMessages(initialMessages);
+          }
         }
 
         // Fetch settings
@@ -396,10 +446,14 @@ export default function App() {
 
   const clearCart = () => setCart([]);
 
-  // Order Submission
+  // Order Submission with local backup
   const handleSubmitOrder = async (newOrder) => {
     // Optimistic local update
-    setOrders((prevOrders) => [newOrder, ...prevOrders]);
+    setOrders((prevOrders) => {
+      const updated = [newOrder, ...prevOrders];
+      localStorage.setItem('bevulta_orders', JSON.stringify(updated));
+      return updated;
+    });
 
     try {
       const dbOrder = {
@@ -443,20 +497,28 @@ export default function App() {
       }
 
       // Replace the local optimistic order with the real one to get correct UUID
-      setOrders(prev => prev.map(o => o.id === newOrder.id ? {
-        ...newOrder,
-        id: insertedOrder.id,
-        date: insertedOrder.created_at.split('T')[0]
-      } : o));
+      setOrders(prev => {
+        const updated = prev.map(o => o.id === newOrder.id ? {
+          ...newOrder,
+          id: insertedOrder.id,
+          date: insertedOrder.created_at.split('T')[0]
+        } : o);
+        localStorage.setItem('bevulta_orders', JSON.stringify(updated));
+        return updated;
+      });
 
     } catch (err) {
-      console.error("Failed to sync order to Supabase:", err);
+      console.error("Failed to sync order to Supabase (saved locally in browser):", err);
     }
   };
 
-  // Message Submission
+  // Message Submission with local backup
   const handleSendMessage = async (newMessage) => {
-    setMessages((prevMessages) => [newMessage, ...prevMessages]);
+    setMessages((prevMessages) => {
+      const updated = [newMessage, ...prevMessages];
+      localStorage.setItem('bevulta_messages', JSON.stringify(updated));
+      return updated;
+    });
     try {
       const dbMsg = {
         name: newMessage.name,
@@ -471,13 +533,17 @@ export default function App() {
       const { data: insertedMsg, error: msgError } = await supabase.from('messages').insert([dbMsg]).select().single();
       if (msgError) throw msgError;
 
-      setMessages(prev => prev.map(m => m.id === newMessage.id ? {
-        ...newMessage,
-        id: insertedMsg.id,
-        date: insertedMsg.created_at.split('T')[0]
-      } : m));
+      setMessages(prev => {
+        const updated = prev.map(m => m.id === newMessage.id ? {
+          ...newMessage,
+          id: insertedMsg.id,
+          date: insertedMsg.created_at.split('T')[0]
+        } : m);
+        localStorage.setItem('bevulta_messages', JSON.stringify(updated));
+        return updated;
+      });
     } catch (err) {
-      console.error("Failed to sync message to Supabase:", err);
+      console.error("Failed to sync message to Supabase (saved locally in browser):", err);
     }
   };
 
@@ -714,9 +780,11 @@ export default function App() {
 
   // Order status management
   const updateOrderStatus = async (orderId, newStatus) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-    );
+    setOrders((prev) => {
+      const updated = prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o));
+      localStorage.setItem('bevulta_orders', JSON.stringify(updated));
+      return updated;
+    });
     // Ignore local mock IDs starting with DEV- (if any got stuck)
     if (typeof orderId === 'string' && !orderId.startsWith('DEV-')) {
       try {
@@ -731,7 +799,11 @@ export default function App() {
     showConfirm(
       lang === 'fr' ? "Voulez-vous vraiment supprimer définitivement cette commande ?" : "Are you sure you want to delete this order?",
       async () => {
-        setOrders((prev) => prev.filter((o) => o.id !== orderId));
+        setOrders((prev) => {
+          const updated = prev.filter((o) => o.id !== orderId);
+          localStorage.setItem('bevulta_orders', JSON.stringify(updated));
+          return updated;
+        });
         if (typeof orderId === 'string' && !orderId.startsWith('DEV-')) {
           try {
             await supabase.from('orders').delete().eq('id', orderId);
@@ -745,9 +817,11 @@ export default function App() {
 
   // Message Actions
   const markMessageRead = async (id) => {
-    setMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status: 'read' } : m))
-    );
+    setMessages((prev) => {
+      const updated = prev.map((m) => (m.id === id ? { ...m, status: 'read' } : m));
+      localStorage.setItem('bevulta_messages', JSON.stringify(updated));
+      return updated;
+    });
     if (typeof id === 'number' || (typeof id === 'string' && !id.startsWith('MSG-'))) {
       try {
         await supabase.from('messages').update({ status: 'read' }).eq('id', id);
@@ -761,7 +835,11 @@ export default function App() {
     showConfirm(
       lang === 'fr' ? "Supprimer ce message ?" : "Delete this message?",
       async () => {
-        setMessages((prev) => prev.filter((m) => m.id !== id));
+        setMessages((prev) => {
+          const updated = prev.filter((m) => m.id !== id);
+          localStorage.setItem('bevulta_messages', JSON.stringify(updated));
+          return updated;
+        });
         if (typeof id === 'number' || (typeof id === 'string' && !id.startsWith('MSG-'))) {
           try {
             await supabase.from('messages').delete().eq('id', id);
@@ -775,9 +853,11 @@ export default function App() {
 
   const replyMessage = async (id, replyText) => {
     const formattedDate = new Date().toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US');
-    setMessages((prev) =>
-      prev.map((m) => m.id === id ? { ...m, status: 'replied', adminReply: replyText, replyDate: formattedDate } : m)
-    );
+    setMessages((prev) => {
+      const updated = prev.map((m) => m.id === id ? { ...m, status: 'replied', adminReply: replyText, replyDate: formattedDate } : m);
+      localStorage.setItem('bevulta_messages', JSON.stringify(updated));
+      return updated;
+    });
     try {
       await supabase.from('messages').update({ 
         status: 'replied', 
@@ -790,9 +870,11 @@ export default function App() {
   };
 
   const updateMessageStatus = async (id, newStatus) => {
-    setMessages((prev) =>
-      prev.map((m) => m.id === id ? { ...m, status: newStatus } : m)
-    );
+    setMessages((prev) => {
+      const updated = prev.map((m) => m.id === id ? { ...m, status: newStatus } : m);
+      localStorage.setItem('bevulta_messages', JSON.stringify(updated));
+      return updated;
+    });
     try {
       await supabase.from('messages').update({ status: newStatus }).eq('id', id);
     } catch (err) {
@@ -1130,6 +1212,7 @@ export default function App() {
             lang={lang} 
             showAlert={showAlert} 
             settings={settings}
+            addOrder={handleSubmitOrder}
           />
         )}
         {currentPage === 'services' && <Services lang={lang} />}
@@ -1146,6 +1229,17 @@ export default function App() {
             showAlert={showAlert}
             showConfirm={showConfirm}
             settings={settings}
+            onGoToTracking={handleGoToTracking}
+          />
+        )}
+        {currentPage === 'track' && (
+          <TrackOrder 
+            orders={orders}
+            lang={lang}
+            settings={settings}
+            showAlert={showAlert}
+            setCurrentPage={setCurrentPage}
+            initialTrackingId={trackingOrderId}
           />
         )}
         {currentPage === 'login' && renderLogin()}

@@ -72,11 +72,13 @@ export default function Contact({ onSendMessage, lang, showAlert, settings = {} 
 
   const subjects = lang === 'fr' ? [
     { value: "Demande d'information", label: "Demande d'information" },
+    { value: "Inscription à une Formation", label: "🎓 Inscription à une Formation" },
     { value: "Demande de devis spécifique", label: "Demande de devis spécifique" },
     { value: "Service Après-Vente (SAV)", label: "Service Après-Vente (SAV)" },
     { value: "Autre", label: "Autre" }
   ] : [
     { value: "Information request", label: "Information request" },
+    { value: "Training Enrollment", label: "🎓 Training Enrollment" },
     { value: "Specific quote request", label: "Specific quote request" },
     { value: "After-Sales Service (SAV)", label: "After-Sales Service (SAV)" },
     { value: "Other", label: "Other" }

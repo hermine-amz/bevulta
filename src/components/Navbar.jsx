@@ -34,6 +34,7 @@ export default function Navbar({
     { id: 'formations', label: lang === 'fr' ? 'FORMATIONS' : 'TRAININGS' },
     { id: 'catalog', label: lang === 'fr' ? 'PRODUITS' : 'PRODUCTS' },
     { id: 'ebooks', label: lang === 'fr' ? 'E-BOOKS' : 'E-BOOKS' },
+    { id: 'track', label: lang === 'fr' ? 'SUIVI MACHINE' : 'TRACK ORDER' },
     { id: 'contact', label: lang === 'fr' ? 'CONTACT' : 'CONTACT' },
   ];
 

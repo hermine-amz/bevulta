@@ -1125,6 +1125,15 @@ export default function AdminDashboard({
                               <td style={{ padding: '14px 20px' }}>
                                 <div style={{ fontWeight: 700, color: '#0f172a' }}>{order.id}</div>
                                 <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{order.date}</div>
+                                {order.id?.startsWith('EBK-') || order.items?.some(it => String(it.id).startsWith('ebook-') || it.name?.toLowerCase().includes('e-book')) ? (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#fef3c7', color: '#b45309', marginTop: '4px' }}>
+                                    📚 E-book
+                                  </span>
+                                ) : (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#dcfce7', color: '#166534', marginTop: '4px' }}>
+                                    ⚙️ Machine
+                                  </span>
+                                )}
                               </td>
                               <td style={{ padding: '14px 20px' }}>
                                 <div style={{ fontWeight: 600, color: '#0f172a' }}>{order.clientName}</div>
@@ -1789,7 +1798,18 @@ export default function AdminDashboard({
                       o.company?.toLowerCase().includes(orderSearch.toLowerCase())
                     ).map(order => (
                       <tr key={order.id}>
-                        <td style={{ fontWeight: 800 }}>{order.id}</td>
+                        <td style={{ fontWeight: 800 }}>
+                          <div>{order.id}</div>
+                          {order.id?.startsWith('EBK-') || order.items?.some(it => String(it.id).startsWith('ebook-') || it.name?.toLowerCase().includes('e-book')) ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#fef3c7', color: '#b45309', marginTop: '4px' }}>
+                              📚 E-book
+                            </span>
+                          ) : (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#dcfce7', color: '#166534', marginTop: '4px' }}>
+                              ⚙️ Machine
+                            </span>
+                          )}
+                        </td>
                         <td>
                           <div>{order.clientName}</div>
                           {order.company && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{order.company}</div>}
@@ -2556,7 +2576,13 @@ export default function AdminDashboard({
                                 <span style={{ padding: '2px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600, backgroundColor: sc.bg, color: sc.color }}>
                                   {sc.label}
                                 </span>
-                                <span className="badge badge-menu" style={{ fontSize: '0.72rem' }}>{msg.subject}</span>
+                                {msg.subject?.toLowerCase().includes('formation') || msg.subject?.toLowerCase().includes('training') ? (
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px', background: '#f3e8ff', color: '#7e22ce', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    🎓 {msg.subject}
+                                  </span>
+                                ) : (
+                                  <span className="badge badge-menu" style={{ fontSize: '0.72rem' }}>{msg.subject}</span>
+                                )}
                               </div>
                             </div>
 
@@ -2797,20 +2823,53 @@ export default function AdminDashboard({
                 <RefreshCw size={14} />
                 {isEn ? "Order Status" : "Statut de la commande"}
               </label>
-              <select
-                className="form-input"
-                style={{ fontWeight: 'bold', color: 'var(--primary)' }}
-                value={viewingOrder.status}
-                onChange={(e) => {
-                  updateOrderStatus(viewingOrder.id, e.target.value);
-                  setViewingOrder({ ...viewingOrder, status: e.target.value });
-                }}
-              >
-                <option value="pending">{isEn ? "Awaiting Payment Validation" : "En attente / Validation de paiement"}</option>
-                <option value="manufacturing">{isEn ? "In Manufacturing" : "En cours de fabrication"}</option>
-                <option value="shipped">{isEn ? "Shipped" : "Expédié"}</option>
-                <option value="delivered">{isEn ? "Delivered" : "Livré"}</option>
-              </select>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <select
+                  className="form-input"
+                  style={{ fontWeight: 'bold', color: 'var(--primary)', flex: '1 1 200px' }}
+                  value={viewingOrder.status}
+                  onChange={(e) => {
+                    updateOrderStatus(viewingOrder.id, e.target.value);
+                    setViewingOrder({ ...viewingOrder, status: e.target.value });
+                  }}
+                >
+                  <option value="pending">{isEn ? "Awaiting Payment Validation" : "En attente / Validation de paiement"}</option>
+                  <option value="manufacturing">{isEn ? "In Manufacturing" : "En cours de fabrication"}</option>
+                  <option value="shipped">{isEn ? "Shipped" : "Expédié"}</option>
+                  <option value="delivered">{isEn ? "Delivered" : "Livré"}</option>
+                </select>
+
+                {viewingOrder.phone && (
+                  <a
+                    href={`https://wa.me/${viewingOrder.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                      isEn
+                        ? `Hello ${viewingOrder.clientName || 'Customer'}, your BEVULTA order #${viewingOrder.id} status is now: "${viewingOrder.status}". Live tracking: https://bevulta.com - Workshop (+229 97 69 91 78).`
+                        : `Bonjour ${viewingOrder.clientName || 'Cher Client'}, votre commande BEVULTA N° ${viewingOrder.id} est désormais : "${
+                            viewingOrder.status === 'manufacturing' ? 'En cours de fabrication à l atelier de Cotonou' :
+                            viewingOrder.status === 'shipped' ? 'Expédié / Confié au transporteur' :
+                            viewingOrder.status === 'delivered' ? 'Livré et Opérationnel' : 'En attente de validation'
+                          }". Vous pouvez suivre son avancement en direct sur notre site. Atelier BEVULTA (+229) 97 69 91 78.`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '11px 16px',
+                      background: 'rgba(22, 163, 74, 0.1)',
+                      color: '#166534',
+                      borderColor: 'rgba(22, 163, 74, 0.3)',
+                      fontWeight: 800,
+                      fontSize: '0.85rem'
+                    }}
+                    title={isEn ? "Notify client via WhatsApp" : "Avertir le client par WhatsApp"}
+                  >
+                    <span>📲 {isEn ? "Notify Client" : "Avertir le client par WhatsApp"}</span>
+                  </a>
+                )}
+              </div>
             </div>
 
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', marginBottom: '24px', backgroundColor: 'var(--bg-app)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>

@@ -92,7 +92,7 @@ export default function PaymentModal({
       `Bonjour BEVULTA, je viens d'effectuer le paiement de ${amountFcfa?.toLocaleString()} FCFA pour "${itemTitle}" au nom de ${buyerName || 'Client'} (${buyerEmail || 'Email non précisé'}, Tél: ${buyerPhone}) (Réf: ${orderId}). Pouvez-vous valider ma commande ? Merci.`
     );
     window.open(`https://wa.me/${whatsappNumber}?text=${text}`, '_blank');
-    if (onConfirmPayment) onConfirmPayment();
+    if (onConfirmPayment) onConfirmPayment({ buyerName, buyerEmail, buyerPhone, orderId, method: selectedMethod });
 
     if (isEbookPurchase) {
       setStep('download');
@@ -102,7 +102,7 @@ export default function PaymentModal({
   };
 
   const handlePaymentCompleted = () => {
-    if (onConfirmPayment) onConfirmPayment();
+    if (onConfirmPayment) onConfirmPayment({ buyerName, buyerEmail, buyerPhone, orderId, method: selectedMethod });
     if (isEbookPurchase) {
       setStep('download');
     } else {

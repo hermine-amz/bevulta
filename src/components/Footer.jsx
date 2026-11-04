@@ -33,6 +33,7 @@ export default function Footer({ setCurrentPage, lang, settings = {} }) {
             <li><a href="#home" onClick={(e) => { e.preventDefault(); setCurrentPage('home'); }} style={{ color: '#a7f3d0', fontSize: '0.9rem' }}>{t('navHome', lang)}</a></li>
             <li><a href="#catalog" onClick={(e) => { e.preventDefault(); setCurrentPage('catalog'); }} style={{ color: '#a7f3d0', fontSize: '0.9rem' }}>{t('navCatalog', lang)}</a></li>
             <li><a href="#ebooks" onClick={(e) => { e.preventDefault(); setCurrentPage('ebooks'); }} style={{ color: '#a7f3d0', fontSize: '0.9rem' }}>{t('navEbooks', lang)}</a></li>
+            <li><a href="#track" onClick={(e) => { e.preventDefault(); setCurrentPage('track'); }} style={{ color: '#a7f3d0', fontSize: '0.9rem' }}>{isEn ? 'Track Machine' : 'Suivre ma Machine'}</a></li>
             <li><a href="#services" onClick={(e) => { e.preventDefault(); setCurrentPage('services'); }} style={{ color: '#a7f3d0', fontSize: '0.9rem' }}>{isEn ? 'Achievements' : 'Nos Réalisations'}</a></li>
             <li><a href="#about" onClick={(e) => { e.preventDefault(); setCurrentPage('about'); }} style={{ color: '#a7f3d0', fontSize: '0.9rem' }}>{t('navAbout', lang)}</a></li>
             <li><a href="#contact" onClick={(e) => { e.preventDefault(); setCurrentPage('contact'); }} style={{ color: '#a7f3d0', fontSize: '0.9rem' }}>{t('navContact', lang)}</a></li>
