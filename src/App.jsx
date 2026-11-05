@@ -20,6 +20,7 @@ import ItemDetail from './pages/ItemDetail';
 // Initial Data
 import { initialProducts } from './data/initialProducts';
 import { initialEbooks } from './data/initialEbooks';
+import { initialFormations } from './data/initialFormations';
 import { defaultSettings } from './data/defaultSettings';
 import { Lock, User, LayoutDashboard, KeyRound, Globe, Sun, Moon, ShoppingCart } from 'lucide-react';
 import { t } from './data/translations';
@@ -162,6 +163,10 @@ export default function App() {
   const [ebooks, setEbooks] = useState(() => {
     const saved = localStorage.getItem('bevulta_ebooks');
     return saved ? JSON.parse(saved) : initialEbooks;
+  });
+  const [formations, setFormations] = useState(() => {
+    const saved = localStorage.getItem('bevulta_formations');
+    return saved ? JSON.parse(saved) : initialFormations;
   });
   const [orders, setOrders] = useState(() => {
     const saved = localStorage.getItem('bevulta_orders');
@@ -773,6 +778,52 @@ export default function App() {
     }
   };
 
+  // Formations CRUD
+  const addFormation = async (newFormation) => {
+    const assignedId = typeof newFormation.id === 'number' && newFormation.id < 1000000 ? newFormation.id : Date.now();
+    const finalFormation = { ...newFormation, id: assignedId };
+
+    setFormations((prev) => {
+      const next = [finalFormation, ...prev];
+      localStorage.setItem('bevulta_formations', JSON.stringify(next));
+      return next;
+    });
+
+    try {
+      await supabase.from('formations').insert([finalFormation]);
+    } catch (err) {
+      console.warn("Supabase formations sync fallback to local storage:", err);
+    }
+  };
+
+  const updateFormation = async (updatedFormation) => {
+    setFormations((prev) => {
+      const next = prev.map((f) => (f.id === updatedFormation.id ? updatedFormation : f));
+      localStorage.setItem('bevulta_formations', JSON.stringify(next));
+      return next;
+    });
+
+    try {
+      await supabase.from('formations').update(updatedFormation).eq('id', updatedFormation.id);
+    } catch (err) {
+      console.warn("Supabase formations sync fallback to local storage:", err);
+    }
+  };
+
+  const deleteFormation = async (id) => {
+    setFormations((prev) => {
+      const next = prev.filter((f) => f.id !== id);
+      localStorage.setItem('bevulta_formations', JSON.stringify(next));
+      return next;
+    });
+
+    try {
+      await supabase.from('formations').delete().eq('id', id);
+    } catch (err) {
+      console.warn("Supabase formations sync fallback to local storage:", err);
+    }
+  };
+
   const handleAddWithMotor = () => {
     if (!selectedProduct) return;
     const basePrice = selectedProduct.promoPriceFcfa || selectedProduct.priceFcfa;
@@ -1022,6 +1073,11 @@ export default function App() {
           updateEbook={updateEbook}
           deleteEbook={deleteEbook}
           bulkUpdateEbooks={bulkUpdateEbooks}
+          formations={formations}
+          addFormation={addFormation}
+          updateFormation={updateFormation}
+          deleteFormation={deleteFormation}
+          onViewDetail={handleViewDetail}
           orders={orders}
           addOrder={handleSubmitOrder}
           updateOrderStatus={updateOrderStatus}
@@ -1247,6 +1303,7 @@ export default function App() {
         )}
         {currentPage === 'formations' && (
           <Formations 
+            formations={formations}
             lang={lang} 
             showAlert={showAlert} 
             settings={settings} 
@@ -1267,6 +1324,7 @@ export default function App() {
             onViewDetail={handleViewDetail}
             allProducts={products}
             allEbooks={ebooks}
+            allFormations={formations}
           />
         )}
         {currentPage === 'services' && <Services lang={lang} />}
@@ -1303,6 +1361,10 @@ export default function App() {
             user={user}
             orders={orders}
             messages={messages.filter(m => m.email?.toLowerCase() === user?.email?.toLowerCase())}
+            ebooks={ebooks}
+            formations={formations}
+            settings={settings}
+            onGoToTracking={handleGoToTracking}
             onLogout={handleLogout}
             lang={lang}
             goHome={() => setCurrentPage('home')}

@@ -5,13 +5,14 @@ import {
   BookOpen, Layers, Copy,
   ShoppingBag, Users, CircleDollarSign, Megaphone, LayoutTemplate, Headphones,
   PanelLeftClose, PanelLeftOpen, ExternalLink, ChevronsUpDown,
-  Info, MessageCircle, CreditCard
+  Info, MessageCircle, CreditCard, GraduationCap, Download, Calendar, Clock
 } from 'lucide-react';
 import { CATEGORIES, CATEGORY_KEYS } from '../data/categories';
 import { t } from '../data/translations';
 import ProductEditor from './ProductEditor';
 import OrderEditor from './OrderEditor';
 import EbookEditor from './EbookEditor';
+import FormationEditor from './FormationEditor';
 import LandingPageEditor from '../components/LandingPageEditor';
 import PaymentSettingsEditor from '../components/PaymentSettingsEditor';
 import AdminHelpCenter from '../components/AdminHelpCenter';
@@ -19,11 +20,12 @@ import AdminHelpCenter from '../components/AdminHelpCenter';
 export default function AdminDashboard({ 
   products, addProduct, updateProduct, deleteProduct,
   ebooks = [], addEbook, updateEbook, deleteEbook, bulkUpdateEbooks,
+  formations = [], addFormation, updateFormation, deleteFormation,
   orders, addOrder, updateOrderStatus, deleteOrder,
   messages, markMessageRead, deleteMessage, replyMessage, updateMessageStatus,
   logoutAdmin, settings, updateSettings,
   lang, setLang, theme, setTheme, goHome,
-  showAlert, showConfirm, bulkUpdateProducts
+  showAlert, showConfirm, bulkUpdateProducts, onViewDetail
 }) {
   const [activeTab, setActiveTab] = useState(() => {
     return sessionStorage.getItem('bevulta_admin_tab') || 'overview';
@@ -62,6 +64,12 @@ export default function AdminDashboard({
   const [selectedEbookIds, setSelectedEbookIds] = useState([]);
   const [ebookSelectionMode, setEbookSelectionMode] = useState(false);
   const [ebookBulkAction, setEbookBulkAction] = useState("");
+
+  // Formations states
+  const [editingFormation, setEditingFormation] = useState(null);
+  const [showFormationEditor, setShowFormationEditor] = useState(false);
+  const [formationSearch, setFormationSearch] = useState("");
+  const [formationFilter, setFormationFilter] = useState("Tous");
 
   useEffect(() => {
     if (previewProduct) {
@@ -307,6 +315,157 @@ export default function AdminDashboard({
     };
     addEbook(duplicated);
     showAlert(isEn ? "Duplicated successfully!" : "E-book dupliqué avec succès !");
+  };
+
+  // Formations Handlers
+  const handleFormationSave = (payload) => {
+    if (editingFormation) {
+      if (updateFormation) updateFormation({ ...payload, id: editingFormation.id });
+      showAlert(isEn ? "Formation updated successfully!" : "Formation mise à jour avec succès !");
+    } else {
+      if (addFormation) addFormation({ ...payload, id: Date.now() });
+      showAlert(isEn ? "Formation created successfully!" : "Nouvelle formation créée avec succès !");
+    }
+    setEditingFormation(null);
+    setShowFormationEditor(false);
+  };
+
+  const startEditFormation = (formItem) => {
+    setEditingFormation(formItem);
+    setShowFormationEditor(true);
+  };
+
+  const duplicateFormation = (formItem) => {
+    const duplicated = {
+      ...formItem,
+      id: Date.now(),
+      title: `${formItem.title} (Copie)`
+    };
+    if (addFormation) addFormation(duplicated);
+    showAlert(isEn ? "Duplicated successfully!" : "Formation dupliquée avec succès !");
+  };
+
+  // CSV Export Handlers
+  const handleExportOrdersCsv = () => {
+    if (!orders || orders.length === 0) {
+      showAlert(isEn ? "No orders to export." : "Aucune commande à exporter.");
+      return;
+    }
+    const headers = [
+      "ID Commande",
+      "Date",
+      "Nom Client",
+      "Email",
+      "Téléphone",
+      "Entreprise",
+      "Pays",
+      "Ville/Adresse",
+      "Statut",
+      "Mode Paiement",
+      "Montant Total (FCFA)",
+      "Montant Total (EUR)",
+      "Acompte 50% (FCFA)",
+      "Articles / Équipements"
+    ];
+
+    const rows = orders.map(o => [
+      o.id,
+      o.date,
+      o.clientName || o.name || '',
+      o.email || '',
+      o.phone || '',
+      o.company || '',
+      o.country || '',
+      o.address || '',
+      o.status || 'pending',
+      o.paymentMethod || 'Acompte Atelier',
+      o.totalFcfa || 0,
+      o.totalEur || Math.round((o.totalFcfa || 0) / 655.957),
+      Math.round((o.totalFcfa || 0) * 0.5),
+      (o.items || []).map(i => `${i.quantity}x ${i.name}`).join(' | ')
+    ]);
+
+    const csvContent = '\uFEFF' + [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(';'))
+      .join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `BEVULTA_Commandes_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showAlert(isEn ? "Orders exported successfully!" : "Fichier CSV des commandes généré avec succès !");
+  };
+
+  const handleExportClientsCsv = () => {
+    if (!orders || orders.length === 0) {
+      showAlert(isEn ? "No clients to export." : "Aucun client à exporter.");
+      return;
+    }
+    const clientMap = new Map();
+    orders.forEach(o => {
+      const key = (o.email || o.phone || o.clientName || '').toLowerCase().trim();
+      if (!key) return;
+      if (!clientMap.has(key)) {
+        clientMap.set(key, {
+          name: o.clientName || o.name || 'Client',
+          email: o.email || '',
+          phone: o.phone || '',
+          company: o.company || '',
+          country: o.country || '',
+          address: o.address || '',
+          orderCount: 1,
+          totalSpentFcfa: o.totalFcfa || 0,
+          lastOrderDate: o.date
+        });
+      } else {
+        const c = clientMap.get(key);
+        c.orderCount += 1;
+        c.totalSpentFcfa += (o.totalFcfa || 0);
+        c.lastOrderDate = o.date;
+      }
+    });
+
+    const headers = [
+      "Nom du Client",
+      "Email",
+      "Téléphone",
+      "Entreprise",
+      "Pays",
+      "Adresse",
+      "Nombre de Commandes",
+      "Total Dépensé (FCFA)",
+      "Dernière Commande"
+    ];
+
+    const rows = Array.from(clientMap.values()).map(c => [
+      c.name,
+      c.email,
+      c.phone,
+      c.company,
+      c.country,
+      c.address,
+      c.orderCount,
+      c.totalSpentFcfa,
+      c.lastOrderDate
+    ]);
+
+    const csvContent = '\uFEFF' + [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(';'))
+      .join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `BEVULTA_Clients_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showAlert(isEn ? "Clients exported successfully!" : "Fichier CSV des clients généré avec succès !");
   };
 
   const toggleEbookVisibility = (bk) => {
@@ -688,6 +847,30 @@ export default function AdminDashboard({
             )}
           </button>
 
+          {/* Formations & Ateliers */}
+          <button 
+            className={`admin-menu-item ${activeTab === 'formations' ? 'active' : ''}`}
+            onClick={() => setActiveTab('formations')}
+            style={{
+              borderRadius: '10px',
+              padding: isSidebarCollapsed ? '12px 0' : '10px 14px',
+              justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+              borderLeft: 'none',
+              background: activeTab === 'formations' ? '#f1f5f9' : 'transparent',
+              color: activeTab === 'formations' ? '#0f172a' : '#64748b',
+              fontWeight: activeTab === 'formations' ? 700 : 500
+            }}
+            title={isEn ? "Trainings & Sessions" : "Formations & Ateliers"}
+          >
+            <GraduationCap size={18} />
+            {!isSidebarCollapsed && <span>{isEn ? "Trainings" : "Formations & Ateliers"}</span>}
+            {!isSidebarCollapsed && formations.length > 0 && (
+              <span className="menu-badge" style={{ backgroundColor: '#ecfdf5', color: '#059669', borderRadius: '10px', padding: '1px 7px', fontSize: '0.72rem', marginLeft: 'auto', fontWeight: 700 }}>
+                {formations.length}
+              </span>
+            )}
+          </button>
+
           {/* 10. Messages Clients */}
           <button 
             className={`admin-menu-item ${activeTab === 'messages' ? 'active' : ''}`}
@@ -822,6 +1005,7 @@ export default function AdminDashboard({
               {activeTab === 'landing_page' && (isEn ? "Landing Page Customizer" : "Personnalisation de la Vitrine")}
               {activeTab === 'payments' && (isEn ? "Payment Gateways & Mobile Money" : "Moyens de Paiement & Mobile Money")}
               {activeTab === 'ebooks' && (isEn ? "Digital Offers & E-books" : "Offres Numériques & E-books")}
+              {activeTab === 'formations' && (isEn ? "Trainings & Practical Workshops" : "Formations & Ateliers Pratiques")}
               {activeTab === 'messages' && (isEn ? "Client Inquiries" : "Messages Clients")}
               {activeTab === 'settings' && (isEn ? "Store Settings" : "Paramètres Généraux")}
               {activeTab === 'help' && (isEn ? "Help Center & Documentation" : "Centre d'Aide")}
@@ -1403,6 +1587,28 @@ export default function AdminDashboard({
                       <option value="Niger">Niger</option>
                       <option value="Côte d'Ivoire">Côte d'Ivoire</option>
                     </select>
+
+                    <button
+                      type="button"
+                      onClick={handleExportClientsCsv}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '9px 14px',
+                        borderRadius: '10px',
+                        border: '1px solid #cbd5e1',
+                        background: '#ffffff',
+                        color: '#0f172a',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <Download size={15} />
+                      <span>{isEn ? "Export (CSV)" : "Exporter (CSV)"}</span>
+                    </button>
                   </div>
                 </div>
 
@@ -1773,14 +1979,38 @@ export default function AdminDashboard({
                     onChange={(e) => setOrderSearch(e.target.value)}
                   />
                 </div>
-                <button 
-                  className="btn btn-primary" 
-                  onClick={() => setShowOrderEditor(true)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}
-                >
-                  <Plus size={16} />
-                  <span>{isEn ? "New Order" : "Nouvelle Commande"}</span>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={handleExportOrdersCsv}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '9px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      background: '#ffffff',
+                      color: '#0f172a',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <Download size={15} />
+                    <span>{isEn ? "Export (CSV)" : "Exporter (CSV)"}</span>
+                  </button>
+
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={() => setShowOrderEditor(true)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}
+                  >
+                    <Plus size={16} />
+                    <span>{isEn ? "New Order" : "Nouvelle Commande"}</span>
+                  </button>
+                </div>
               </div>
               <div className="data-table-container" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
                 <table className="data-table">
@@ -2485,6 +2715,236 @@ export default function AdminDashboard({
             );
           })()}
 
+          {/* TAB: FORMATIONS & WORKSHOPS */}
+          {activeTab === 'formations' && (() => {
+            const filteredFormations = formations.filter(f => {
+              const q = formationSearch.toLowerCase();
+              const matchSearch = !q || 
+                f.title?.toLowerCase().includes(q) || 
+                f.subtitle?.toLowerCase().includes(q) || 
+                f.category?.toLowerCase().includes(q) ||
+                f.location?.toLowerCase().includes(q);
+
+              if (!matchSearch) return false;
+              if (formationFilter !== 'Tous' && f.category !== formationFilter) return false;
+              return true;
+            });
+
+            return (
+              <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+                
+                {/* Header & Controls */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '12px', flexShrink: 0, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative', width: '280px' }}>
+                      <input
+                        type="text"
+                        placeholder={isEn ? "Search formations by title, theme..." : "Rechercher une formation..."}
+                        value={formationSearch}
+                        onChange={(e) => setFormationSearch(e.target.value)}
+                        className="form-input"
+                        style={{ width: '100%', padding: '8px 12px', fontSize: '0.85rem' }}
+                      />
+                    </div>
+
+                    {/* Filter categories */}
+                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
+                      {["Tous", "Agro-alimentaire", "Mécanique & Maintenance", "Élevage & Nutrition", "BTP & Matériaux"].map(cat => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setFormationFilter(cat)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '20px',
+                            border: 'none',
+                            fontSize: '0.78rem',
+                            fontWeight: formationFilter === cat ? 800 : 500,
+                            background: formationFilter === cat ? '#166534' : '#f1f5f9',
+                            color: formationFilter === cat ? '#ffffff' : '#475569',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => { setEditingFormation(null); setShowFormationEditor(true); }}
+                    className="btn btn-primary"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: '#166534',
+                      padding: '9px 16px',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <Plus size={16} />
+                    <span>{isEn ? "Add New Formation" : "+ Créer une Formation"}</span>
+                  </button>
+                </div>
+
+                {/* Formations Table */}
+                <div className="data-table-container" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '60px' }}>Visuel</th>
+                        <th>Formation & Programme</th>
+                        <th>Catégorie</th>
+                        <th>Tarif (FCFA)</th>
+                        <th>Durée & Lieu</th>
+                        <th>Prochaine Session</th>
+                        <th style={{ textAlign: 'right' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredFormations.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                            {isEn ? "No formations found matching your search." : "Aucune formation trouvée avec ces critères."}
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredFormations.map(f => (
+                          <tr key={f.id}>
+                            <td>
+                              <img
+                                src={f.coverImage}
+                                alt={f.title}
+                                style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                                onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=700'; }}
+                              />
+                            </td>
+                            <td>
+                              <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>
+                                {f.title}
+                              </div>
+                              {f.subtitle && (
+                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
+                                  {f.subtitle}
+                                </div>
+                              )}
+                              {f.badge && (
+                                <span style={{
+                                  display: 'inline-block',
+                                  marginTop: '4px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  color: '#059669',
+                                  background: '#ecfdf5',
+                                  padding: '2px 8px',
+                                  borderRadius: '10px'
+                                }}>
+                                  {f.badge}
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              <span style={{ fontSize: '0.82rem', color: '#475569', fontWeight: 600 }}>
+                                {f.category}
+                              </span>
+                            </td>
+                            <td>
+                              <div style={{ fontWeight: 800, color: '#166534', fontSize: '0.92rem' }}>
+                                {(f.promoPriceFcfa || f.priceFcfa).toLocaleString()} F
+                              </div>
+                              {f.promoPriceFcfa && (
+                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', textDecoration: 'line-through' }}>
+                                  {f.priceFcfa.toLocaleString()} F
+                                </div>
+                              )}
+                              <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                ≈ {(f.promoPriceEur || f.priceEur)} €
+                              </div>
+                            </td>
+                            <td>
+                              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a' }}>
+                                {f.duration}
+                              </div>
+                              <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                                {f.location}
+                              </div>
+                            </td>
+                            <td>
+                              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#b45309', background: '#fef3c7', padding: '3px 8px', borderRadius: '6px', display: 'inline-block' }}>
+                                📅 {f.nextSession}
+                              </div>
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (onViewDetail) onViewDetail(f, 'formation');
+                                  }}
+                                  className="action-btn"
+                                  title="Voir la fiche"
+                                  style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff' }}
+                                >
+                                  <Eye size={15} color="#475569" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => duplicateFormation(f)}
+                                  className="action-btn"
+                                  title="Dupliquer"
+                                  style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff' }}
+                                >
+                                  <Copy size={15} color="#475569" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => startEditFormation(f)}
+                                  className="action-btn"
+                                  title="Modifier"
+                                  style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff' }}
+                                >
+                                  <Edit size={15} color="#2563eb" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const confirmMsg = isEn 
+                                      ? `Delete formation "${f.title}"?`
+                                      : `Êtes-vous sûr de vouloir supprimer définitivement la formation « ${f.title} » ?`;
+                                    if (showConfirm) {
+                                      showConfirm(confirmMsg, () => {
+                                        if (deleteFormation) deleteFormation(f.id);
+                                        showAlert(isEn ? "Formation deleted." : "Formation supprimée.");
+                                      });
+                                    } else {
+                                      if (deleteFormation) deleteFormation(f.id);
+                                    }
+                                  }}
+                                  className="action-btn"
+                                  title="Supprimer"
+                                  style={{ padding: '6px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff' }}
+                                >
+                                  <Trash2 size={15} color="#dc2626" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+            );
+          })()}
+
           {/* TAB 4: CLIENT MESSAGES */}
           {activeTab === 'messages' && (() => {
             const quickReplies = isEn ? [
@@ -3134,6 +3594,18 @@ export default function AdminDashboard({
           onSave={handleEbookSave}
           onCancel={() => { setShowEbookEditor(false); setEditingEbook(null); }}
           allEbooks={ebooks}
+          lang={lang}
+          showAlert={showAlert}
+          showConfirm={showConfirm}
+        />
+      )}
+
+      {/* ADD/EDIT FORMATION FULL-PAGE EDITOR */}
+      {showFormationEditor && (
+        <FormationEditor
+          formation={editingFormation}
+          onSave={handleFormationSave}
+          onCancel={() => { setShowFormationEditor(false); setEditingFormation(null); }}
           lang={lang}
           showAlert={showAlert}
           showConfirm={showConfirm}

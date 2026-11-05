@@ -388,6 +388,38 @@ export default function ItemDetail({
             </p>
           )}
 
+          {/* Availability & Workshop Lead Time Badge (For Products) */}
+          {type === 'product' && (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 14px',
+              borderRadius: '10px',
+              fontSize: '0.86rem',
+              fontWeight: 700,
+              marginBottom: '16px',
+              backgroundColor: (item.availability && item.availability.toLowerCase().includes('en stock')) 
+                ? 'rgba(22, 101, 52, 0.08)' 
+                : 'rgba(217, 119, 6, 0.08)',
+              color: (item.availability && item.availability.toLowerCase().includes('en stock'))
+                ? '#166534'
+                : '#b45309',
+              border: `1px solid ${(item.availability && item.availability.toLowerCase().includes('en stock')) ? 'rgba(22, 101, 52, 0.25)' : 'rgba(217, 119, 6, 0.25)'}`
+            }}>
+              <span style={{ fontSize: '0.95rem' }}>
+                {(item.availability && item.availability.toLowerCase().includes('en stock')) ? '🟢' : '🟠'}
+              </span>
+              <span>
+                {item.availability 
+                  ? (item.availability.toLowerCase().includes('en stock') 
+                      ? (isEn ? "In stock at workshop — Dispatched in 48h" : "En stock à l'atelier — Expédition sous 48h") 
+                      : (isEn ? `Manufacturing on demand — ${item.availability}` : `Fabrication sur commande — ${item.availability}`))
+                  : (isEn ? "Workshop lead time: 7 to 15 business days" : "Délai atelier : 7 à 15 jours ouvrés")}
+              </span>
+            </div>
+          )}
+
           {/* Pricing Box */}
           <div style={{
             background: 'linear-gradient(135deg, rgba(20, 83, 45, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%)',

@@ -28,6 +28,7 @@ import PhoneInputWithCountry from '../components/PhoneInputWithCountry';
 import { defaultSettings } from '../data/defaultSettings';
 
 export default function Formations({ 
+  formations,
   lang = 'fr', 
   showAlert, 
   settings = {}, 
@@ -52,8 +53,10 @@ export default function Formations({
 
   const whatsappWorkshop = settings?.whatsappNumber || '22997699178';
 
+  const activeFormations = (formations && formations.length > 0) ? formations : initialFormations;
+
   // Filter formations
-  const filteredFormations = initialFormations.filter(f => {
+  const filteredFormations = activeFormations.filter(f => {
     const matchCat = selectedCategory === "Tous" || f.category === selectedCategory;
     const matchQuery = searchQuery === "" || 
       f.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
