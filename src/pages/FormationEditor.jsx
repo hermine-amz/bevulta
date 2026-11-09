@@ -16,9 +16,12 @@ import {
   Sparkles,
   Sliders,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Upload,
+  Loader
 } from 'lucide-react';
 import { FORMATION_CATEGORIES } from '../data/initialFormations';
+import { processImageUpload } from '../utils/imageUploadHelper';
 
 const PRESET_COVERS = [
   { label: "Agro-alimentaire", url: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=700" },
@@ -59,6 +62,7 @@ export default function FormationEditor({
 
   // Media
   const [coverImage, setCoverImage] = useState(formation?.coverImage || PRESET_COVERS[0].url);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   // Pedagogical info
   const [description, setDescription] = useState(formation?.description || '');
@@ -492,9 +496,53 @@ export default function FormationEditor({
                 <span>{isEn ? "Cover Image" : "Photo de Couverture"}</span>
               </h3>
 
+              {/* Upload direct depuis la galerie ou les fichiers */}
+              <div style={{ marginBottom: '16px', padding: '14px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+                  {isEn ? "Upload photo from your device:" : "Téléverser depuis votre appareil (Galerie / Fichiers) :"}
+                </label>
+                <label style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '9px 16px',
+                  borderRadius: '8px',
+                  background: '#166534',
+                  color: '#ffffff',
+                  fontSize: '0.84rem',
+                  fontWeight: 700,
+                  cursor: uploadingCover ? 'wait' : 'pointer',
+                  boxShadow: '0 1px 4px rgba(22, 101, 52, 0.2)'
+                }}>
+                  {uploadingCover ? <Loader className="animate-spin" size={15} /> : <Upload size={15} />}
+                  <span>{uploadingCover ? (isEn ? "Uploading..." : "Téléversement...") : (isEn ? "Select Photo (Files / Gallery)" : "Choisir une Photo (Galerie / Fichiers)")}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    disabled={uploadingCover}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        setUploadingCover(true);
+                        const url = await processImageUpload(file, 'formations');
+                        setCoverImage(url);
+                        if (showAlert) showAlert(isEn ? "Formation photo updated!" : "Photo de formation mise à jour !");
+                      } catch (err) {
+                        if (showAlert) showAlert(err.message || "Erreur de téléversement", 'danger');
+                      } finally {
+                        setUploadingCover(false);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  {isEn ? "Image URL" : "Lien URL de l'image"}
+                  {isEn ? "Or enter direct image URL:" : "Ou saisir une URL directe d'image :"}
                 </label>
                 <input
                   type="text"

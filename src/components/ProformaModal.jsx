@@ -128,10 +128,10 @@ export default function ProformaModal({ order, settings, isOpen, onClose, lang =
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #166534", paddingBottom: "16px", marginBottom: "20px", flexWrap: "wrap", gap: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <img
-                  src="/logo.jpg"
+                  src={settings?.storeLogo || "/logo.jpg"}
                   alt="BEVULTA Logo"
                   style={{ width: "56px", height: "56px", borderRadius: "50%", objectFit: "cover", border: "2px solid #166534" }}
-                  onError={(e) => { e.target.style.display = 'none'; }}
+                  onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
                 />
                 <div>
                   <h3 style={{ fontSize: "1.35rem", fontWeight: 900, color: "#0b2c5c", margin: 0 }}>

@@ -513,6 +513,7 @@ export default function AdminDashboard({
       switch (status) {
         case 'pending': return 'En attente de validation';
         case 'manufacturing': return 'En cours de fabrication';
+        case 'manufactured': return 'Fabriqué';
         case 'shipped': return 'Expédié';
         case 'delivered': return 'Livré';
         default: return 'Inconnu';
@@ -521,6 +522,7 @@ export default function AdminDashboard({
       switch (status) {
         case 'pending': return 'Pending Validation';
         case 'manufacturing': return 'In Manufacturing';
+        case 'manufactured': return 'Manufactured';
         case 'shipped': return 'Shipped';
         case 'delivered': return 'Delivered';
         default: return 'Unknown';
@@ -983,18 +985,16 @@ export default function AdminDashboard({
       </aside>
 
       {/* Main Workspace */}
-      <main className="admin-main" style={{ overflow: 'hidden', background: '#f8fafc' }}>
+      <main className="admin-main" style={{ overflow: 'hidden', backgroundColor: 'var(--bg-app)' }}>
         <header className="admin-header" style={{
           flexShrink: 0,
-          background: '#ffffff',
-          borderBottom: '1px solid #e5e7eb',
           padding: '14px 32px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--secondary)' }}>
               {activeTab === 'overview' && (isEn ? "Dashboard Home" : "Accueil")}
               {activeTab === 'orders' && (isEn ? "Sales & Quotes" : "Ventes & Commandes")}
               {activeTab === 'inventory' && (isEn ? "Machinery Catalog" : "Catalogue des Machines")}
@@ -1310,6 +1310,7 @@ export default function AdminDashboard({
                           const statusConfig = {
                             pending: { label: isEn ? 'Pending' : 'En attente', bg: '#fef3c7', text: '#b45309' },
                             manufacturing: { label: isEn ? 'Manufacturing' : 'Fabrication', bg: '#eff6ff', text: '#1d4ed8' },
+                            manufactured: { label: isEn ? 'Manufactured' : 'Fabriqué', bg: '#d1fae5', text: '#065f46' },
                             shipped: { label: isEn ? 'Shipped' : 'Expédié', bg: '#f3e8ff', text: '#7e22ce' },
                             delivered: { label: isEn ? 'Delivered' : 'Livré', bg: '#dcfce7', text: '#166534' }
                           }[order.status] || { label: order.status, bg: '#f1f5f9', text: '#475569' };
@@ -1775,8 +1776,16 @@ export default function AdminDashboard({
                   <div className="chariow-stat-value">
                     {orders.length > 0 ? Math.round((totalRevenue + pendingRevenue) / orders.length).toLocaleString() : 0} FCFA
                   </div>
-                  <div className="chariow-stat-label">
+                  <div className="chariow-stat-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span>{isEn ? "Average Order Value (Basket)" : "Panier Moyen par Devis"}</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('help')}
+                      title={isEn ? "Formula: (Paid + Pending Revenue) ÷ Total Orders. Click to see optimization tips in Help Center." : "Formule : (CA Encaissé + Devis en cours) ÷ Total Commandes. Cliquez pour voir les conseils dans le Centre d'Aide."}
+                      style={{ background: 'none', border: 'none', color: '#166534', cursor: 'pointer', padding: '0 4px', display: 'flex', alignItems: 'center' }}
+                    >
+                      <Info size={15} />
+                    </button>
                   </div>
                   <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '8px' }}>
                     {orders.length} {isEn ? "orders considered" : "commandes analysées"}
@@ -3312,6 +3321,7 @@ export default function AdminDashboard({
                     const statusLabels = {
                       pending: isEn ? "Awaiting Payment" : "En attente / Validation de paiement",
                       manufacturing: isEn ? "In Manufacturing" : "En cours de fabrication",
+                      manufactured: isEn ? "Manufactured (Ready for Delivery)" : "Fabriqué (Prêt pour expédition)",
                       shipped: isEn ? "Shipped" : "Expédié",
                       delivered: isEn ? "Delivered" : "Livré"
                     };
@@ -3334,6 +3344,7 @@ export default function AdminDashboard({
                 >
                   <option value="pending">{isEn ? "Awaiting Payment Validation" : "En attente / Validation de paiement"}</option>
                   <option value="manufacturing">{isEn ? "In Manufacturing" : "En cours de fabrication"}</option>
+                  <option value="manufactured">{isEn ? "Manufactured (Ready for Delivery)" : "Fabriqué (Prêt pour expédition)"}</option>
                   <option value="shipped">{isEn ? "Shipped" : "Expédié"}</option>
                   <option value="delivered">{isEn ? "Delivered" : "Livré"}</option>
                 </select>
@@ -3345,6 +3356,7 @@ export default function AdminDashboard({
                         ? `Hello ${viewingOrder.clientName || 'Customer'}, your BEVULTA order #${viewingOrder.id} status is now: "${viewingOrder.status}". Live tracking: https://bevulta.com - Workshop (+229 97 69 91 78).`
                         : `Bonjour ${viewingOrder.clientName || 'Cher Client'}, votre commande BEVULTA N° ${viewingOrder.id} est désormais : "${
                             viewingOrder.status === 'manufacturing' ? 'En cours de fabrication à l atelier de Cotonou' :
+                            viewingOrder.status === 'manufactured' ? 'Fabriqué et prêt en atelier de Cotonou' :
                             viewingOrder.status === 'shipped' ? 'Expédié / Confié au transporteur' :
                             viewingOrder.status === 'delivered' ? 'Livré et Opérationnel' : 'En attente de validation'
                           }". Vous pouvez suivre son avancement en direct sur notre site. Atelier BEVULTA (+229) 97 69 91 78.`

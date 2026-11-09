@@ -1792,6 +1792,7 @@ textarea.form-input {
 }
 .status-pending { background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; }
 .status-manufacturing { background-color: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.status-manufactured { background-color: rgba(16, 185, 129, 0.15); color: #059669; }
 .status-shipped { background-color: rgba(168, 85, 247, 0.15); color: #a855f7; }
 .status-delivered { background-color: rgba(16, 185, 129, 0.15); color: #10b981; }
 
@@ -2977,6 +2978,168 @@ textarea.form-input {
     border-color: #e2e8f0 !important;
   }
 }
+
+/* ==========================================================================
+   GLOBAL DARK MODE POLISH & CONSISTENCY
+   ========================================================================== */
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+[data-theme="dark"] body {
+  background-color: #06130b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .hero {
+  background: linear-gradient(135deg, #051a0e 0%, #030d07 100%) !important;
+}
+
+[data-theme="dark"] .hero-panel {
+  background: rgba(8, 28, 17, 0.75) !important;
+  border-color: rgba(34, 197, 94, 0.2) !important;
+}
+
+[data-theme="dark"] .hero-panel h1,
+[data-theme="dark"] .hero-panel h2 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .hero-panel p {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .cta-banner-card {
+  background: linear-gradient(135deg, rgba(8, 36, 21, 0.9) 0%, rgba(4, 18, 11, 0.95) 100%) !important;
+  border-color: rgba(34, 197, 94, 0.25) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .domains-section {
+  background: transparent !important;
+}
+
+[data-theme="dark"] .domain-card {
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .track-search-card {
+  background: #091f14 !important;
+  border-color: rgba(34, 197, 94, 0.3) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .track-search-card input {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .track-details-card {
+  background: #091f14 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .admin-layout {
+  background: #06130b !important;
+}
+
+[data-theme="dark"] .admin-sidebar {
+  background: #07170e !important;
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .admin-header {
+  background: #081c11 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .admin-header h2 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .admin-main {
+  background: #06130b !important;
+}
+
+[data-theme="dark"] .chariow-stat-card {
+  background: #081c11 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .chariow-stat-value {
+  color: #4ade80 !important;
+}
+
+[data-theme="dark"] .chariow-stat-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .data-table-container {
+  background: #081c11 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .data-table th {
+  background: #06150d !important;
+  color: #cbd5e1 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .data-table td {
+  border-bottom-color: rgba(255, 255, 255, 0.05) !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .data-table tr:hover td {
+  background: rgba(34, 197, 94, 0.06) !important;
+}
+
+[data-theme="dark"] .product-card,
+[data-theme="dark"] .ebook-card,
+[data-theme="dark"] .formation-card {
+  background-color: #081c11 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .product-card h3,
+[data-theme="dark"] .ebook-card h3,
+[data-theme="dark"] .formation-card h3 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .product-description,
+[data-theme="dark"] .ebook-description,
+[data-theme="dark"] .formation-description {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .form-input,
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="search"],
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background-color: #07170e !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .form-input::placeholder,
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #64748b !important;
+}
+
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .modal-container,
+[data-theme="dark"] .payment-modal {
+  background-color: #081c11 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f8fafc !important;
+}
+
 
 
 

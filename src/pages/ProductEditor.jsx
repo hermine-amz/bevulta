@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { CATEGORIES, CATEGORY_KEYS } from '../data/categories';
 import { supabase } from '../supabaseClient';
+import { processImageUpload } from '../utils/imageUploadHelper';
 
 /* ──────────────────────────────────────────────────────────────────── */
 /*  Rich-Text Toolbar for Product Description                           */
@@ -270,7 +271,7 @@ export default function ProductEditor({ product, onSave, onCancel, lang = 'fr', 
     }
   }, [updateForm]);
 
-  // Upload to Supabase Storage
+  // Upload to Supabase Storage with guaranteed fallback
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
@@ -281,15 +282,9 @@ export default function ProductEditor({ product, onSave, onCancel, lang = 'fr', 
     try {
       const uploaded = [];
       for (const file of files) {
-        const ext = file.name.split('.').pop().toLowerCase();
-        const path = `products/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error } = await supabase.storage
-          .from('bevulta-media')
-          .upload(path, file, { cacheControl: '3600', upsert: false });
-
-        if (!error) {
-          const { data } = supabase.storage.from('bevulta-media').getPublicUrl(path);
-          uploaded.push(data.publicUrl);
+        const url = await processImageUpload(file, 'products');
+        if (url) {
+          uploaded.push(url);
         }
       }
 
@@ -300,7 +295,7 @@ export default function ProductEditor({ product, onSave, onCancel, lang = 'fr', 
       }
     } catch (err) {
       console.error(err);
-      setUploadError(err.message);
+      setUploadError(err.message || "Erreur lors du téléversement de la photo.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

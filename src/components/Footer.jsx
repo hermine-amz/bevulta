@@ -13,9 +13,10 @@ export default function Footer({ setCurrentPage, lang, settings = {} }) {
         <div className="footer-col" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="logo" style={{ color: '#ffffff', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <img 
-              src="/logo.jpg" 
+              src={settings?.storeLogo || "/logo.jpg"} 
               alt="BEVULTA Logo" 
               style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)' }} 
+              onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
             />
             <span style={{ fontWeight: '900', fontSize: '1.35rem', letterSpacing: '0.05em', fontFamily: 'var(--font-heading)' }}>BEVULTA</span>
           </div>

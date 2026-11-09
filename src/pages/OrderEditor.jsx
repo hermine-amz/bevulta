@@ -191,6 +191,7 @@ export default function OrderEditor({ products, onSave, onClose, lang, showConfi
                 <select className="form-input" name="status" value={formData.status} onChange={handleFieldChange}>
                   <option value="pending">{isEn ? "Pending Validation" : "En attente / Validation de paiement"}</option>
                   <option value="manufacturing">{isEn ? "In Manufacturing" : "En cours de fabrication"}</option>
+                  <option value="manufactured">{isEn ? "Manufactured (Ready)" : "Fabriqué (Prêt pour expédition)"}</option>
                   <option value="shipped">{isEn ? "Shipped" : "Expédié"}</option>
                   <option value="delivered">{isEn ? "Delivered" : "Livré"}</option>
                 </select>

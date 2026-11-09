@@ -14,9 +14,14 @@ import {
   MapPin,
   Mail,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Upload,
+  Image as ImageIcon,
+  Loader,
+  Trash2
 } from 'lucide-react';
 import { defaultSettings } from '../data/defaultSettings';
+import { processImageUpload } from '../utils/imageUploadHelper';
 
 const YoutubeIcon = ({ size = 18, color = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -39,6 +44,7 @@ export default function LandingPageEditor({
   });
   const [activeSubTab, setActiveSubTab] = useState('hero'); // 'hero' | 'stats' | 'contact' | 'sections'
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadingSlot, setUploadingSlot] = useState(null);
 
   const isEn = lang === 'en';
 
@@ -388,6 +394,76 @@ export default function LandingPageEditor({
               {isEn ? "Hero Section Content" : "Contenu de la Bannière Principale (Hero)"}
             </h3>
 
+            {/* Logo officiel du site avec Upload Direct */}
+            <div style={{ marginBottom: '24px', padding: '16px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <img
+                  src={formData.storeLogo || '/logo.jpg'}
+                  alt="Logo BEVULTA"
+                  style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #166534', background: '#ffffff', flexShrink: 0 }}
+                  onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
+                />
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
+                    {isEn ? "Official Store Logo" : "Logo Officiel du Site"}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                    {isEn ? "Visible in header, footer, mobile drawer, and proforma PDFs." : "Visible dans la barre de navigation, le pied de page et les devis proforma."}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <label style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '9px 16px',
+                  borderRadius: '8px',
+                  background: '#166534',
+                  color: '#ffffff',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: uploadingSlot === 'storeLogo' ? 'wait' : 'pointer',
+                  boxShadow: '0 2px 6px rgba(22, 101, 52, 0.2)'
+                }}>
+                  {uploadingSlot === 'storeLogo' ? <Loader className="animate-spin" size={15} /> : <Upload size={15} />}
+                  <span>{uploadingSlot === 'storeLogo' ? (isEn ? "Uploading..." : "Téléversement...") : (isEn ? "Upload Logo (Files / Gallery)" : "Changer le Logo (Galerie / Fichiers)")}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    disabled={uploadingSlot === 'storeLogo'}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        setUploadingSlot('storeLogo');
+                        const url = await processImageUpload(file, 'branding');
+                        handleChange('storeLogo', url);
+                        if (showAlert) showAlert(isEn ? "Logo updated successfully!" : "Logo mis à jour avec succès !");
+                      } catch (err) {
+                        if (showAlert) showAlert(err.message || "Erreur de téléversement", 'danger');
+                      } finally {
+                        setUploadingSlot(null);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </label>
+                {formData.storeLogo && (
+                  <button
+                    type="button"
+                    onClick={() => handleChange('storeLogo', '')}
+                    title={isEn ? "Reset to default logo" : "Réinitialiser au logo par défaut"}
+                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#64748b', fontSize: '0.8rem', cursor: 'pointer' }}
+                  >
+                    {isEn ? "Reset" : "Par défaut"}
+                  </button>
+                )}
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
@@ -530,27 +606,87 @@ export default function LandingPageEditor({
                   const key = `heroImage${num}`;
                   const defaultImg = num === 1 ? '/hero-machines.png' : `/hero-machines-${num}.png`;
                   const currentImg = formData[key] || defaultImg;
+                  const isUploading = uploadingSlot === key;
+
                   return (
-                    <div key={num} style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <div key={num} style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <img 
                           src={currentImg} 
                           alt={`Aperçu Slide ${num}`} 
-                          style={{ width: '48px', height: '48px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #cbd5e1' }}
+                          style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #cbd5e1', flexShrink: 0, background: '#ffffff' }}
                           onError={(e) => { e.currentTarget.src = '/hero.png'; }}
                         />
-                        <div>
-                          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a' }}>Slide {num}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Image {num}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>Slide {num}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {formData[key] ? (formData[key].startsWith('data:') ? 'Photo locale téléversée' : formData[key]) : defaultImg}
+                          </div>
                         </div>
                       </div>
-                      <input
-                        type="text"
-                        value={formData[key] || ''}
-                        onChange={(e) => handleChange(key, e.target.value)}
-                        placeholder={defaultImg}
-                        style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
-                      />
+
+                      {/* Bouton d'upload direct depuis la galerie ou explorateur */}
+                      <label style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        width: '100%',
+                        padding: '9px 12px',
+                        borderRadius: '8px',
+                        background: '#166534',
+                        color: '#ffffff',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: isUploading ? 'wait' : 'pointer',
+                        boxShadow: '0 1px 3px rgba(22, 101, 52, 0.2)',
+                        transition: 'all 0.2s ease'
+                      }}>
+                        {isUploading ? <Loader className="animate-spin" size={14} /> : <Upload size={14} />}
+                        <span>{isUploading ? (isEn ? "Uploading..." : "Téléversement...") : (isEn ? "Upload Photo (Gallery / Files)" : "Choisir photo (Galerie / Fichiers)")}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          disabled={isUploading}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              setUploadingSlot(key);
+                              const url = await processImageUpload(file, 'hero');
+                              handleChange(key, url);
+                              if (showAlert) showAlert(isEn ? `Slide ${num} updated successfully!` : `Slide ${num} mise à jour avec succès !`);
+                            } catch (err) {
+                              if (showAlert) showAlert(err.message || "Erreur de téléversement", 'danger');
+                            } finally {
+                              setUploadingSlot(null);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                      </label>
+
+                      {/* Saisie URL alternative et réinitialisation */}
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <input
+                          type="text"
+                          value={formData[key] || ''}
+                          onChange={(e) => handleChange(key, e.target.value)}
+                          placeholder={isEn ? "Or enter image URL..." : "Ou coller une URL..."}
+                          style={{ flex: 1, padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem' }}
+                        />
+                        {formData[key] && (
+                          <button
+                            type="button"
+                            onClick={() => handleChange(key, '')}
+                            title={isEn ? "Reset to default photo" : "Remettre la photo par défaut"}
+                            style={{ padding: '0 8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#64748b', cursor: 'pointer', fontSize: '0.75rem' }}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

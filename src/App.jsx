@@ -284,28 +284,39 @@ export default function App() {
         // Fetch orders and items with dual persistence
         const { data: ordData, error: ordErr } = await supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false });
         if (!ordErr && ordData && ordData.length > 0) {
-          const mappedOrders = ordData.map(o => ({
-            id: o.id,
-            date: o.created_at ? o.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
-            clientName: o.client_name,
-            email: o.email,
-            phone: o.phone,
-            company: o.company,
-            country: o.country,
-            address: o.address,
-            notes: o.notes,
-            status: o.status,
-            subtotalFcfa: o.subtotal_fcfa,
-            totalFcfa: o.total_fcfa,
-            totalEur: o.total_eur,
-            items: (o.order_items || []).map(item => ({
-              id: item.product_id,
-              name: "Product #" + item.product_id,
-              quantity: item.quantity,
-              priceFcfa: item.price_fcfa,
-              priceEur: item.price_eur
-            }))
-          }));
+          const mappedOrders = ordData.map(o => {
+            const refMatch = (o.notes || '').match(/\[REF:([^\]]+)\]/);
+            const cleanNotes = (o.notes || '').replace(/\[REF:[^\]]+\]\s*/, '').trim();
+            const humanRef = refMatch 
+              ? refMatch[1] 
+              : (o.id && (o.id.startsWith('DEV-') || o.id.startsWith('FORM-') || o.id.startsWith('EBK-')) 
+                  ? o.id 
+                  : `DEV-${o.id ? o.id.replace(/[^0-9]/g, '').slice(0, 6) || o.id.slice(0, 6).toUpperCase() : '100000'}`);
+
+            return {
+              id: humanRef,
+              dbId: o.id,
+              date: o.created_at ? o.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              clientName: o.client_name,
+              email: o.email,
+              phone: o.phone,
+              company: o.company,
+              country: o.country,
+              address: o.address,
+              notes: cleanNotes,
+              status: o.status,
+              subtotalFcfa: o.subtotal_fcfa,
+              totalFcfa: o.total_fcfa,
+              totalEur: o.total_eur,
+              items: (o.order_items || []).map(item => ({
+                id: item.product_id,
+                name: "Machine / Équipement #" + (item.product_id || ''),
+                quantity: item.quantity,
+                priceFcfa: item.price_fcfa,
+                priceEur: item.price_eur
+              }))
+            };
+          });
           setOrders(mappedOrders);
           localStorage.setItem('bevulta_orders', JSON.stringify(mappedOrders));
         } else if (!ordErr && ordData && ordData.length === 0) {
@@ -476,7 +487,13 @@ export default function App() {
       return updated;
     });
 
+    // Also persist for immediate tracking auto-lookup
+    if (newOrder.id) {
+      sessionStorage.setItem('bevulta_last_order_id', newOrder.id);
+    }
+
     try {
+      const refTag = `[REF:${newOrder.id}]`;
       const dbOrder = {
         client_name: newOrder.clientName,
         email: newOrder.email,
@@ -484,7 +501,7 @@ export default function App() {
         company: newOrder.company,
         country: newOrder.country,
         address: newOrder.address,
-        notes: newOrder.notes,
+        notes: newOrder.notes ? `${refTag} ${newOrder.notes}` : refTag,
         subtotal_fcfa: newOrder.subtotalFcfa,
         total_fcfa: newOrder.totalFcfa,
         total_eur: newOrder.totalEur,
@@ -517,12 +534,13 @@ export default function App() {
         if (itemsError) throw itemsError;
       }
 
-      // Replace the local optimistic order with the real one to get correct UUID
+      // Preserve human-readable ID (DEV-XXXXXX) AND keep dbId (UUID) for future Supabase SQL mutations
       setOrders(prev => {
         const updated = prev.map(o => o.id === newOrder.id ? {
           ...newOrder,
-          id: insertedOrder.id,
-          date: insertedOrder.created_at.split('T')[0]
+          id: newOrder.id,
+          dbId: insertedOrder.id,
+          date: insertedOrder.created_at ? insertedOrder.created_at.split('T')[0] : o.date
         } : o);
         localStorage.setItem('bevulta_orders', JSON.stringify(updated));
         return updated;
@@ -854,15 +872,22 @@ export default function App() {
 
   // Order status management
   const updateOrderStatus = async (orderId, newStatus) => {
+    let targetDbId = orderId;
     setOrders((prev) => {
-      const updated = prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o));
+      const updated = prev.map((o) => {
+        if (o.id === orderId || o.dbId === orderId) {
+          if (o.dbId) targetDbId = o.dbId;
+          return { ...o, status: newStatus };
+        }
+        return o;
+      });
       localStorage.setItem('bevulta_orders', JSON.stringify(updated));
       return updated;
     });
-    // Ignore local mock IDs starting with DEV- (if any got stuck)
-    if (typeof orderId === 'string' && !orderId.startsWith('DEV-')) {
+
+    if (targetDbId && !targetDbId.startsWith('DEV-')) {
       try {
-        await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+        await supabase.from('orders').update({ status: newStatus }).eq('id', targetDbId);
       } catch (err) {
         console.error("Failed to update order status:", err);
       }
@@ -873,14 +898,17 @@ export default function App() {
     showConfirm(
       lang === 'fr' ? "Voulez-vous vraiment supprimer définitivement cette commande ?" : "Are you sure you want to delete this order?",
       async () => {
+        let targetDbId = orderId;
         setOrders((prev) => {
-          const updated = prev.filter((o) => o.id !== orderId);
+          const target = prev.find(o => o.id === orderId || o.dbId === orderId);
+          if (target && target.dbId) targetDbId = target.dbId;
+          const updated = prev.filter((o) => o.id !== orderId && o.dbId !== orderId);
           localStorage.setItem('bevulta_orders', JSON.stringify(updated));
           return updated;
         });
-        if (typeof orderId === 'string' && !orderId.startsWith('DEV-')) {
+        if (targetDbId && !targetDbId.startsWith('DEV-')) {
           try {
-            await supabase.from('orders').delete().eq('id', orderId);
+            await supabase.from('orders').delete().eq('id', targetDbId);
           } catch (err) {
             console.error("Failed to delete order:", err);
           }

@@ -10,7 +10,8 @@ export default function Navbar({
   lang, 
   setLang, 
   theme, 
-  setTheme 
+  setTheme,
+  settings = {}
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isEn = lang === 'en';
@@ -73,9 +74,10 @@ export default function Navbar({
           style={{ display: 'flex', alignItems: 'center' }}
         >
           <img 
-            src="/logo.jpg" 
+            src={settings?.storeLogo || "/logo.jpg"} 
             alt="BEVULTA" 
             style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)' }} 
+            onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
           />
         </a>
 
@@ -289,7 +291,12 @@ export default function Navbar({
             {/* Drawer Header */}
             <div className="mobile-drawer-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <img src="/logo.jpg" alt="BEVULTA" style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
+                <img 
+                  src={settings?.storeLogo || "/logo.jpg"} 
+                  alt="BEVULTA" 
+                  style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} 
+                  onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
+                />
                 <div>
                   <div style={{ fontWeight: 900, fontSize: '1.1rem', color: 'var(--secondary)' }}>BEVULTA</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Machines Agricoles & E-books</div>

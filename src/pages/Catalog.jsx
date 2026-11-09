@@ -12,7 +12,9 @@ export default function Catalog({
   showAlert,
   onViewDetail
 }) {
-  const [activeTab, setActiveTab] = useState('tous');
+  const [activeTab, setActiveTab] = useState(() => {
+    return sessionStorage.getItem('bevulta_catalog_category') || 'tous';
+  });
   const [activeSubcategory, setActiveSubcategory] = useState('tous');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('name-asc');
@@ -23,10 +25,22 @@ export default function Catalog({
 
   const isEn = lang === 'en';
 
+  // Read preselected category from navigation (e.g. from Home page domains)
+  useEffect(() => {
+    const savedCat = sessionStorage.getItem('bevulta_catalog_category');
+    if (savedCat) {
+      setActiveTab(savedCat);
+    }
+  }, []);
 
   // Reset subcategory when main category changes
   useEffect(() => {
     setActiveSubcategory('tous');
+    if (activeTab === 'tous') {
+      sessionStorage.removeItem('bevulta_catalog_category');
+    } else {
+      sessionStorage.setItem('bevulta_catalog_category', activeTab);
+    }
   }, [activeTab]);
 
   const getCategoryLabel = (catKey) => {

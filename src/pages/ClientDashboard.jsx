@@ -152,6 +152,8 @@ export default function ClientDashboard({
         return <Clock size={20} className="text-warning" />;
       case 'manufacturing':
         return <Wrench size={20} className="text-primary" />;
+      case 'manufactured':
+        return <CheckCircle2 size={20} style={{ color: '#059669' }} />;
       case 'shipped':
         return <Truck size={20} style={{ color: 'var(--accent-cyan)' }} />;
       case 'delivered':
@@ -166,6 +168,7 @@ export default function ClientDashboard({
       switch (status) {
         case 'pending': return 'En attente de validation';
         case 'manufacturing': return 'En cours de fabrication';
+        case 'manufactured': return 'Fabriqué';
         case 'shipped': return 'Expédié / En transit';
         case 'delivered': return 'Livré';
         default: return 'Inconnu';
@@ -174,6 +177,7 @@ export default function ClientDashboard({
       switch (status) {
         case 'pending': return 'Pending Validation';
         case 'manufacturing': return 'In Manufacturing';
+        case 'manufactured': return 'Manufactured';
         case 'shipped': return 'Shipped / In Transit';
         case 'delivered': return 'Delivered';
         default: return 'Unknown';
@@ -185,6 +189,7 @@ export default function ClientDashboard({
     switch (status) {
       case 'pending': return 'status-pending';
       case 'manufacturing': return 'status-manufacturing';
+      case 'manufactured': return 'status-manufactured';
       case 'shipped': return 'status-shipped';
       case 'delivered': return 'status-delivered';
       default: return '';
@@ -429,6 +434,14 @@ export default function ClientDashboard({
                               {isEn
                                 ? "Your machine is on the assembly line at our Cotonou workshop."
                                 : "Votre machine est actuellement en cours d'usinage et d'assemblage dans notre atelier de Cotonou."}
+                            </div>
+                          )}
+                          {order.status === 'manufactured' && (
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', backgroundColor: 'rgba(5, 150, 105, 0.05)', padding: '10px', borderRadius: '6px', borderLeft: '3px solid #059669' }}>
+                              <strong>{isEn ? 'Equipment Ready: ' : 'Machine Fabriquée : '}</strong>
+                              {isEn
+                                ? "Your machine is completed and quality-tested in workshop. Ready for dispatch or pickup."
+                                : "Votre équipement est entièrement usiné, assemblé et testé en atelier. Il est prêt pour l'expédition ou le retrait."}
                             </div>
                           )}
                           {order.status === 'shipped' && (

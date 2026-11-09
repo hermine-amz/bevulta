@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { initiatePayment } from '../services/paymentService';
 import PaymentModal from '../components/PaymentModal';
+import { supabase } from '../supabaseClient';
 import { t } from '../data/translations';
 
 export default function TrackOrder({
@@ -33,47 +34,138 @@ export default function TrackOrder({
   const [searchQuery, setSearchQuery] = useState(initialTrackingId || '');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [searched, setSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [paymentChoice, setPaymentChoice] = useState('deposit'); // 'deposit' (50%) or 'full' (100%)
   const [paymentModalData, setPaymentModalData] = useState(null);
 
-  // Auto-load if initialTrackingId is provided or if stored in sessionStorage
-  useEffect(() => {
-    const idToSearch = initialTrackingId || sessionStorage.getItem('bevulta_last_order_id');
-    if (idToSearch && orders.length > 0) {
-      setSearchQuery(idToSearch);
-      findAndSetOrder(idToSearch);
-    }
-  }, [initialTrackingId, orders]);
+  // Flexible multi-field matcher
+  const matchOrderLocally = (orderList, query) => {
+    if (!query || !query.trim() || !orderList || orderList.length === 0) return null;
+    const cleanQuery = query.trim().toLowerCase();
+    const cleanQueryAlpha = cleanQuery.replace(/[^0-9a-z]/g, '');
+    const cleanQueryDigits = cleanQuery.replace(/[^0-9]/g, '');
 
-  const findAndSetOrder = (query) => {
+    return orderList.find(o => {
+      const oId = (o.id || '').toLowerCase();
+      const oDbId = (o.dbId || '').toLowerCase();
+      const oRef = (o.reference || '').toLowerCase();
+      const oNotes = (o.notes || '').toLowerCase();
+      const oEmail = (o.email || '').toLowerCase().trim();
+      const oPhone = (o.phone || '').toLowerCase();
+      const oPhoneDigits = oPhone.replace(/[^0-9]/g, '');
+
+      // 1. Exact match on human ID, dbId (UUID) or reference
+      if (oId === cleanQuery || oDbId === cleanQuery || oRef === cleanQuery) return true;
+
+      // 2. Alphanumeric match (ignoring dashes and spaces, e.g. "dev123456")
+      const oIdAlpha = oId.replace(/[^0-9a-z]/g, '');
+      const oRefAlpha = oRef.replace(/[^0-9a-z]/g, '');
+      if (cleanQueryAlpha) {
+        if (oIdAlpha === cleanQueryAlpha || oRefAlpha === cleanQueryAlpha) return true;
+        if (cleanQueryAlpha.length >= 4 && (oIdAlpha.includes(cleanQueryAlpha) || cleanQueryAlpha.includes(oIdAlpha))) return true;
+      }
+
+      // 3. Digits match on reference (e.g. user typed "849204" for "DEV-849204")
+      if (cleanQueryDigits.length >= 4 && (oId.includes(cleanQueryDigits) || oNotes.includes(cleanQueryDigits))) return true;
+
+      // 4. Notes check (e.g. [REF:DEV-XXXXXX])
+      if (cleanQueryAlpha && oNotes.includes(cleanQueryAlpha)) return true;
+
+      // 5. Email exact match
+      if (cleanQuery.includes('@') && oEmail === cleanQuery) return true;
+
+      // 6. Phone number match (matching last 8 digits or inclusion)
+      if (cleanQueryDigits.length >= 6 && oPhoneDigits.length >= 6) {
+        if (oPhoneDigits.includes(cleanQueryDigits) || cleanQueryDigits.includes(oPhoneDigits)) return true;
+        if (cleanQueryDigits.slice(-8) === oPhoneDigits.slice(-8)) return true;
+      }
+
+      return false;
+    });
+  };
+
+  const findAndSetOrder = async (query) => {
     setSearched(true);
     if (!query || !query.trim()) {
       setSelectedOrder(null);
       return;
     }
 
-    const q = query.trim().toLowerCase();
-    const cleanQ = q.replace(/[^0-9a-z]/g, '');
-
-    // Search by ID exact or partial, then phone, then email
-    const match = orders.find(o => {
-      const oId = (o.id || '').toLowerCase();
-      const oPhone = (o.phone || '').toLowerCase().replace(/[^0-9]/g, '');
-      const oEmail = (o.email || '').toLowerCase();
-
-      return oId === q || 
-             oId.replace(/[^0-9a-z]/g, '') === cleanQ ||
-             (cleanQ.length >= 6 && oPhone.includes(cleanQ)) ||
-             oEmail === q;
-    });
-
-    if (match) {
-      setSelectedOrder(match);
-      sessionStorage.setItem('bevulta_last_order_id', match.id);
-    } else {
-      setSelectedOrder(null);
+    // 1. Try local memory orders first (instant lookup)
+    const localMatch = matchOrderLocally(orders, query);
+    if (localMatch) {
+      setSelectedOrder(localMatch);
+      sessionStorage.setItem('bevulta_last_order_id', localMatch.id);
+      return;
     }
+
+    // 2. Query Supabase in real-time as a fallback
+    setIsSearching(true);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .order('created_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        const mappedRemote = data.map(o => {
+          const refMatch = (o.notes || '').match(/\[REF:([^\]]+)\]/);
+          const cleanNotes = (o.notes || '').replace(/\[REF:[^\]]+\]\s*/, '').trim();
+          const humanRef = refMatch 
+            ? refMatch[1] 
+            : (o.id && (o.id.startsWith('DEV-') || o.id.startsWith('FORM-') || o.id.startsWith('EBK-')) 
+                ? o.id 
+                : `DEV-${o.id ? o.id.replace(/[^0-9]/g, '').slice(0, 6) || o.id.slice(0, 6).toUpperCase() : '100000'}`);
+
+          return {
+            id: humanRef,
+            dbId: o.id,
+            date: o.created_at ? o.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+            clientName: o.client_name,
+            email: o.email,
+            phone: o.phone,
+            company: o.company,
+            country: o.country,
+            address: o.address,
+            notes: cleanNotes,
+            status: o.status,
+            subtotalFcfa: o.subtotal_fcfa,
+            totalFcfa: o.total_fcfa,
+            totalEur: o.total_eur,
+            items: (o.order_items || []).map(item => ({
+              id: item.product_id,
+              name: "Machine Industrielle #" + (item.product_id || ''),
+              quantity: item.quantity,
+              priceFcfa: item.price_fcfa,
+              priceEur: item.price_eur
+            }))
+          };
+        });
+
+        const remoteMatch = matchOrderLocally(mappedRemote, query);
+        if (remoteMatch) {
+          setSelectedOrder(remoteMatch);
+          sessionStorage.setItem('bevulta_last_order_id', remoteMatch.id);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Supabase order tracking query error:", err);
+    } finally {
+      setIsSearching(false);
+    }
+
+    setSelectedOrder(null);
   };
+
+  // Auto-load if initialTrackingId is provided or if stored in sessionStorage
+  useEffect(() => {
+    const idToSearch = initialTrackingId || sessionStorage.getItem('bevulta_last_order_id');
+    if (idToSearch) {
+      setSearchQuery(idToSearch);
+      findAndSetOrder(idToSearch);
+    }
+  }, [initialTrackingId, orders]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -81,12 +173,13 @@ export default function TrackOrder({
   };
 
   const getStepStatus = (currentStatus, stepIndex) => {
-    // 0: pending, 1: manufacturing, 2: shipped, 3: delivered
+    // 0: pending, 1: manufacturing, 2: manufactured, 3: shipped, 4: delivered
     const statusMap = {
       pending: 0,
       manufacturing: 1,
-      shipped: 2,
-      delivered: 3
+      manufactured: 2,
+      shipped: 3,
+      delivered: 4
     };
     const currentIdx = statusMap[currentStatus] ?? 0;
 
@@ -159,6 +252,14 @@ export default function TrackOrder({
       stepKey: 'manufacturing'
     },
     {
+      title: isEn ? "Manufactured & Tested" : "Machine Fabriquée",
+      desc: isEn 
+        ? "Equipment completely manufactured and tested in workshop. Ready for dispatch or pickup." 
+        : "Machine entièrement fabriquée et testée en atelier. Prête pour l'expédition ou le retrait.",
+      icon: CheckCircle2,
+      stepKey: 'manufactured'
+    },
+    {
       title: isEn ? "Shipping & Transit" : "Expédition & Transit",
       desc: isEn 
         ? "Equipment inspected and packed. In transit via regional freight carrier." 
@@ -208,10 +309,9 @@ export default function TrackOrder({
       </div>
 
       {/* Search Bar Form */}
-      <div style={{
+      <form onSubmit={handleSearchSubmit} className="track-search-card" style={{
         maxWidth: '680px',
         margin: '0 auto 40px',
-        background: '#ffffff',
         padding: '10px 12px',
         borderRadius: '16px',
         border: '2px solid rgba(22, 101, 52, 0.2)',
@@ -224,9 +324,10 @@ export default function TrackOrder({
           <Search size={22} style={{ flexShrink: 0 }} />
           <input
             type="text"
-            placeholder={isEn ? "Enter quote # (DEV-123456) or phone..." : "Entrez votre N° de devis (ex: DEV-123456) ou tél..."}
+            placeholder={isEn ? "Enter quote # (DEV-123456), phone or email..." : "Entrez votre N° de devis (ex: DEV-123456), tél ou email..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            disabled={isSearching}
             style={{
               width: '100%',
               border: 'none',
@@ -239,8 +340,8 @@ export default function TrackOrder({
           />
         </div>
         <button
-          type="button"
-          onClick={handleSearchSubmit}
+          type="submit"
+          disabled={isSearching}
           className="btn btn-primary"
           style={{
             padding: '12px 24px',
@@ -250,13 +351,15 @@ export default function TrackOrder({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            flexShrink: 0
+            flexShrink: 0,
+            opacity: isSearching ? 0.7 : 1,
+            cursor: isSearching ? 'not-allowed' : 'pointer'
           }}
         >
-          <span>{isEn ? "Track" : "Suivre"}</span>
+          <span>{isSearching ? (isEn ? "Searching..." : "Recherche...") : (isEn ? "Track" : "Suivre")}</span>
           <ArrowRight size={16} />
         </button>
-      </div>
+      </form>
 
       {/* NOT FOUND NOTIFICATION */}
       {searched && !selectedOrder && (
@@ -296,8 +399,7 @@ export default function TrackOrder({
         <div style={{ animation: 'fadeIn 0.3s ease' }}>
           
           {/* Top Dossier Card */}
-          <div style={{
-            background: '#ffffff',
+          <div className="track-details-card" style={{
             borderRadius: '16px',
             border: '1px solid #e2e8f0',
             padding: '28px',
@@ -317,13 +419,15 @@ export default function TrackOrder({
                     fontWeight: 800,
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
-                    backgroundColor: selectedOrder.status === 'delivered' ? '#dcfce7' : selectedOrder.status === 'shipped' ? '#e0f2fe' : selectedOrder.status === 'manufacturing' ? '#dbeafe' : '#fef3c7',
-                    color: selectedOrder.status === 'delivered' ? '#166534' : selectedOrder.status === 'shipped' ? '#0369a1' : selectedOrder.status === 'manufacturing' ? '#1e40af' : '#b45309'
+                    backgroundColor: selectedOrder.status === 'delivered' ? '#dcfce7' : selectedOrder.status === 'shipped' ? '#e0f2fe' : selectedOrder.status === 'manufactured' ? '#d1fae5' : selectedOrder.status === 'manufacturing' ? '#dbeafe' : '#fef3c7',
+                    color: selectedOrder.status === 'delivered' ? '#166534' : selectedOrder.status === 'shipped' ? '#0369a1' : selectedOrder.status === 'manufactured' ? '#065f46' : selectedOrder.status === 'manufacturing' ? '#1e40af' : '#b45309'
                   }}>
                     {selectedOrder.status === 'delivered' 
                       ? (isEn ? "Delivered" : "Livré & Installé")
                       : selectedOrder.status === 'shipped'
                       ? (isEn ? "Shipped" : "Expédié / En Transit")
+                      : selectedOrder.status === 'manufactured'
+                      ? (isEn ? "Manufactured" : "Fabriqué (Prêt)")
                       : selectedOrder.status === 'manufacturing'
                       ? (isEn ? "In Manufacturing" : "En cours de fabrication")
                       : (isEn ? "Pending Validation" : "En attente / Devis Émis")}

@@ -231,7 +231,7 @@ export default function Home({
       )}
 
       {/* Hero Section */}
-      <section className="hero" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' }}>
+      <section className="hero">
         <div className="hero-content-wrapper">
           
           <div className="hero-panel">
@@ -522,16 +522,81 @@ export default function Home({
 
           <div className="domains-grid">
             {[
-              { label: isEn ? "AGRO-FOOD" : "AGROALIMENTAIRE", img: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=600" },
-              { label: isEn ? "AGRICULTURE" : "AGRICULTURE", img: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?q=80&w=600" },
-              { label: isEn ? "BTP & CONSTRUCTION" : "BTP & CONSTRUCTION", img: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=600" },
-              { label: isEn ? "CARPENTRY" : "MENUISERIE & MÉTALLURGIE", img: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=600" },
-              { label: isEn ? "RENEWABLE ENERGIES" : "ÉNERGIES RENOUVELABLES", img: "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?q=80&w=600" }
+              { 
+                label: isEn ? "AGRO-FOOD" : "AGROALIMENTAIRE", 
+                img: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=600",
+                onClick: () => {
+                  sessionStorage.setItem('bevulta_catalog_category', 'Matériels de transformation agro-alimentaire');
+                  setCurrentPage('catalog');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              },
+              { 
+                label: isEn ? "AGRICULTURE" : "AGRICULTURE", 
+                img: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?q=80&w=600",
+                onClick: () => {
+                  sessionStorage.setItem('bevulta_catalog_category', 'Matériels de transformation agro-alimentaire');
+                  setCurrentPage('catalog');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              },
+              { 
+                label: isEn ? "BTP & CONSTRUCTION" : "BTP & CONSTRUCTION", 
+                img: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=600",
+                onClick: () => {
+                  sessionStorage.setItem('bevulta_catalog_category', 'Matériels de BTP & Hôpitaux / Construction métallique');
+                  setCurrentPage('catalog');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              },
+              { 
+                label: isEn ? "CARPENTRY" : "MENUISERIE & MÉTALLURGIE", 
+                img: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=600",
+                onClick: () => {
+                  sessionStorage.setItem('bevulta_catalog_category', 'Matériels de Menuiserie & Boulangerie');
+                  setCurrentPage('catalog');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              },
+              { 
+                label: isEn ? "RENEWABLE ENERGIES" : "ÉNERGIES RENOUVELABLES", 
+                img: "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?q=80&w=600",
+                onClick: () => {
+                  setCurrentPage('services');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }
             ].map((domain, index) => (
-              <div key={index} className="domain-card">
+              <div 
+                key={index} 
+                className="domain-card"
+                onClick={domain.onClick}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); domain.onClick(); } }}
+                style={{ cursor: 'pointer', outline: 'none' }}
+                title={isEn ? `Explore ${domain.label}` : `Explorer les équipements de ${domain.label}`}
+              >
                 <img src={domain.img} alt={domain.label} />
-                <div className="domain-card-overlay">
+                <div className="domain-card-overlay" style={{ flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', paddingBottom: '16px' }}>
                   <div className="domain-card-label">{domain.label}</div>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    background: 'rgba(0, 0, 0, 0.45)',
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    backdropFilter: 'blur(6px)',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                  }}>
+                    <span>{isEn ? "View solutions" : "Voir les équipements"}</span>
+                    <ArrowRight size={12} />
+                  </div>
                 </div>
               </div>
             ))}
@@ -934,7 +999,7 @@ export default function Home({
 
       {/* CTA Section */}
       {activeSettings.showCtaBanner !== false && (
-      <section className="section glass-panel" style={{ textAlign: 'center', background: 'linear-gradient(135deg, rgba(255,255,255,0.75) 0%, #f0fdf4 100%)', margin: '60px auto', padding: '60px 24px', maxWidth: '1200px' }}>
+      <section className="section glass-panel cta-banner-card" style={{ textAlign: 'center', margin: '60px auto', padding: '60px 24px', maxWidth: '1200px' }}>
         <h2 style={{ fontSize: '2.2rem', marginBottom: '16px', color: 'var(--secondary)' }}>
           {activeSettings.ctaTitle || t('ctaTitle', lang)}
         </h2>

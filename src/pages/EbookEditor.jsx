@@ -14,9 +14,12 @@ import {
   X,
   CreditCard,
   Sliders,
-  ShieldCheck
+  ShieldCheck,
+  Upload,
+  Loader
 } from 'lucide-react';
 import { EBOOK_CATEGORIES } from '../data/initialEbooks';
+import { processImageUpload } from '../utils/imageUploadHelper';
 
 const PRESET_COVERS = [
   { label: "Agro-alimentaire", url: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=700" },
@@ -54,6 +57,7 @@ export default function EbookEditor({ ebook, onSave, onCancel, allEbooks = [], l
   const [coverImage, setCoverImage] = useState(
     ebook?.coverImage || (isPack ? PRESET_COVERS[5].url : PRESET_COVERS[0].url)
   );
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState(ebook?.downloadUrl || '');
   const [paymentLink, setPaymentLink] = useState(ebook?.paymentLink || '');
   
@@ -780,9 +784,58 @@ export default function EbookEditor({ ebook, onSave, onCancel, allEbooks = [], l
                   {isEn ? "Cover Image & Branding" : "Image de Couverture"}
                 </h2>
 
+                {/* Upload direct depuis la galerie ou les fichiers */}
+                <div style={{ marginBottom: '24px', padding: '18px', borderRadius: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                  <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+                    {isEn ? "Upload cover from your device (Gallery / File explorer):" : "Téléverser directement depuis votre appareil (Galerie / Fichiers) :"}
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                    <label style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '11px 20px',
+                      borderRadius: '10px',
+                      background: '#166534',
+                      color: '#ffffff',
+                      fontSize: '0.88rem',
+                      fontWeight: 700,
+                      cursor: uploadingCover ? 'wait' : 'pointer',
+                      boxShadow: '0 2px 6px rgba(22, 101, 52, 0.25)'
+                    }}>
+                      {uploadingCover ? <Loader className="animate-spin" size={17} /> : <Upload size={17} />}
+                      <span>{uploadingCover ? (isEn ? "Uploading..." : "Téléversement...") : (isEn ? "Select from Files / Gallery" : "Choisir une Photo (Galerie / Fichiers)")}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        disabled={uploadingCover}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            setUploadingCover(true);
+                            const url = await processImageUpload(file, 'ebooks');
+                            setCoverImage(url);
+                            if (showAlert) showAlert(isEn ? "Cover updated successfully!" : "Couverture mise à jour avec succès !");
+                          } catch (err) {
+                            if (showAlert) showAlert(err.message || "Erreur de téléversement", 'danger');
+                          } finally {
+                            setUploadingCover(false);
+                            e.target.value = '';
+                          }
+                        }}
+                      />
+                    </label>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                      JPG, PNG, WEBP optimisé automatiquement
+                    </span>
+                  </div>
+                </div>
+
                 <div style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
-                    URL directe de l'image de couverture :
+                    {isEn ? "Or enter direct image URL:" : "Ou saisir une URL directe d'image :"}
                   </label>
                   <input
                     type="url"

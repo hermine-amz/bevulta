@@ -166,6 +166,16 @@ export default function AdminHelpCenter({
         ? "When viewing the quote summary, click 'Imprimer le Devis Officiel'. All website controls, buttons, footers, and menus are automatically hidden. Only the clean, branded proforma sheet with BEVULTA logo and validity terms is printed or saved as PDF."
         : "Dans la page du devis, cliquez sur le bouton « Imprimer le Devis Officiel » (ou faites Ctrl + P). Le système masque automatiquement la barre de navigation, les boutons d'action et le pied de page du site web. Seule la feuille proforma officielle avec le logo BEVULTA, les coordonnées et les conditions de validité est imprimée ou enregistrée en PDF propre."
     },
+    {
+      id: 'ord-4',
+      category: 'orders',
+      title: isEn ? "What is the 'Panier Moyen' (Average Order Value) and how is it calculated?" : "Qu'est-ce que le « Panier Moyen » et comment est-il calculé ?",
+      answer: isEn
+        ? "The Average Order Value (AOV / Panier Moyen) measures the average amount generated per quotation or sale on BEVULTA.\n\n• Calculation formula: (Total Collected Revenue + Pending Quotes) ÷ Total Number of Orders.\n\n• Strategic importance: It reveals whether clients are buying single units or complete industrial processing lines (e.g., Peeler + Grater + Press + Roaster for cassava processing).\n\n• Tips to increase it:\n1. Propose turnkey machine bundles with spare parts.\n2. Cross-sell practical training and digital production guides.\n3. Recommend heavy-duty dual-energy engine options (Diesel + Electric)."
+        : "Le « Panier Moyen » (ou valeur moyenne d'un devis) mesure le montant moyen dépensé par un client ou prospect lors d'une commande d'équipement sur BEVULTA.\n\n• Formule de calcul : (Total Chiffre d'Affaires Encaissé + Devis en cours) ÷ Nombre total de commandes enregistrées.\n\n• Pourquoi cet indicateur est capital : Il vous indique en temps réel si vos clients achètent des machines individuelles ou des unités complètes de transformation industrielle (ex: Éplucheuse + Râpeuse + Presse hydraulique + Fourneau inox pour le gari/manioc).\n\n• 3 leviers concrets pour augmenter votre Panier Moyen :\n1. Proposer des packs complets clé en main (machine + jeu de pièces d'usure d'avance).\n2. Associer systématiquement un guide technique ou un atelier de formation pratique à la commande d'une machine.\n3. Valoriser les motorisations professionnelles durables (Thermique Diesel SIFANG 12 CV / Électrique Triphasé).",
+      highlight: true,
+      quickAction: { label: isEn ? "View Revenue & Basket" : "Voir Trésorerie & Panier", tab: 'overview' }
+    },
 
     // 5. LANDING PAGE & CUSTOMIZATION
     {
@@ -215,7 +225,7 @@ export default function AdminHelpCenter({
   });
 
   return (
-    <div style={{ animation: 'fadeIn 0.3s ease', maxWidth: '1050px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ animation: 'fadeIn 0.3s ease', maxWidth: '1050px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '90px' }}>
       
       {/* Top Banner Header */}
       <div style={{
